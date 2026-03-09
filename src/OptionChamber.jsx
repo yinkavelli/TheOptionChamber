@@ -162,7 +162,12 @@ function InteractivePayoff({ row }) {
   const handleMove = useCallback((clientX) => { const svg = svgRef.current; if (!svg) return; const rect = svg.getBoundingClientRect(); const cx = Math.max(pad.l, Math.min(pad.l + cW, (clientX - rect.left) * (W / rect.width))); const price = minP + ((cx - pad.l) / cW) * (maxP - minP); setCursor({ x: cx, price, pnl: calcPnL(price) }); }, [W, cW, pad.l, calcPnL, minP, maxP]);
   return (
     <div style={{ position: "relative" }}>
-      {cursor && <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", background: "rgba(22,22,26,0.95)", border: `1px solid ${C.borderHi}`, borderRadius: 8, padding: "4px 12px", display: "flex", gap: 12, fontSize: 10, fontFamily: "monospace", pointerEvents: "none", zIndex: 10, whiteSpace: "nowrap" }}>
+      <div style={{ display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap", padding: "0 4px" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: C.green, display: "inline-block" }} />{maxPnl > 10000 ? "Max profit ∞" : `Max profit $${maxPnl.toFixed(2)}`}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: C.red, display: "inline-block" }} />{`Max loss $${Math.abs(minPnl).toFixed(2)}`}</span>
+        {breakevens.map((be, i) => <span key={i} style={{ fontSize: 11.5, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: C.amber, display: "inline-block" }} />BE ${be.toFixed(2)}</span>)}
+      </div>
+      {cursor && <div style={{ position: "absolute", top: 40, left: "50%", transform: "translateX(-50%)", background: "rgba(22,22,26,0.95)", border: `1px solid ${C.borderHi}`, borderRadius: 8, padding: "4px 12px", display: "flex", gap: 12, fontSize: 10, fontFamily: "monospace", pointerEvents: "none", zIndex: 10, whiteSpace: "nowrap" }}>
         <span style={{ color: C.sub }}>Price <span style={{ color: C.text, fontWeight: 700 }}>${cursor.price.toFixed(2)}</span></span>
         <span style={{ color: cursor.pnl >= 0 ? C.green : C.red, fontWeight: 700 }}>P&L {cursor.pnl >= 0 ? "+" : ""}{cursor.pnl.toFixed(2)}</span>
       </div>}
@@ -207,11 +212,6 @@ function InteractivePayoff({ row }) {
           </>);
         })()}
       </svg>
-      <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 8, color: C.muted, display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.green, display: "inline-block" }} />{maxPnl > 10000 ? "Max profit ∞" : `Max profit $${maxPnl.toFixed(2)}`}</span>
-        <span style={{ fontSize: 8, color: C.muted, display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.red, display: "inline-block" }} />{`Max loss $${Math.abs(minPnl).toFixed(2)}`}</span>
-        {breakevens.map((be, i) => <span key={i} style={{ fontSize: 8, color: C.muted, display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: C.amber, display: "inline-block" }} />BE ${be.toFixed(2)}</span>)}
-      </div>
     </div>
   );
 }
