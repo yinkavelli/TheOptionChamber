@@ -129,7 +129,7 @@ function DeltaRing({ delta }) {
 function InteractivePayoff({ row }) {
   const svgRef = useRef(null);
   const [cursor, setCursor] = useState(null);
-  const W = 320, H = 140;
+  const W = 320, H = 110;
   const legs = row.legs || [{ signal: row.signal || 'BUY', type: row.type || 'C', strike: row.strike || 0, bid: row.bid || 0, ask: row.ask || 0 }];
   const calcPnL = useCallback((price) => {
     let pnl = 0;
@@ -142,9 +142,10 @@ function InteractivePayoff({ row }) {
     return pnl;
   }, [legs]);
   const strikes = legs.map(l => l.strike).filter(s => s > 0);
-  const minStrike = Math.min(...strikes), maxStrike = Math.max(...strikes);
+  const uPrice = row.underlying || 0;
+  const minStrike = Math.min(...strikes, uPrice || Infinity), maxStrike = Math.max(...strikes, uPrice || 0);
   const spread = maxStrike - minStrike || maxStrike * 0.1 || 10;
-  const pad2 = Math.max(spread * 1.5, maxStrike * 0.08);
+  const pad2 = Math.max(spread * 0.8, maxStrike * 0.04);
   const minP = minStrike - pad2, maxP = maxStrike + pad2;
   const pts = useMemo(() => Array.from({ length: 161 }, (_, i) => { const p = minP + (maxP - minP) * (i / 160); return { p, pnl: calcPnL(p) }; }), [calcPnL, minP, maxP]);
   const maxPnl = Math.max(...pts.map(x => x.pnl)), minPnl = Math.min(...pts.map(x => x.pnl));
@@ -183,6 +184,19 @@ function InteractivePayoff({ row }) {
           <g key={`be${i}`}><line x1={toX(be)} y1={pad.t} x2={toX(be)} y2={H - pad.b} stroke="rgba(243,156,18,0.5)" strokeWidth="1" strokeDasharray="2 3" />
             <text x={toX(be)} y={pad.t - 4} textAnchor="middle" fill={C.amber} fontSize="6.5" fontFamily="monospace">BE</text></g>
         ))}
+        {uPrice > 0 && (() => {
+          const uX = toX(uPrice);
+          const uPnl = calcPnL(uPrice);
+          const uY = toY(uPnl);
+          return (
+            <g opacity={cursor ? 0.3 : 1} style={{ transition: "opacity 0.2s" }}>
+              <line x1={uX} y1={pad.t} x2={uX} y2={H - pad.b} stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeDasharray="2 4" />
+              <circle cx={uX} cy={uY} r={3.5} fill={C.surfaceHi} stroke={uPnl >= 0 ? C.green : C.red} strokeWidth="1.5" />
+              <text x={uX} y={pad.t - 10} textAnchor="middle" fill={C.text} fontSize="6.5" fontFamily="monospace" fontWeight="800">CURRENT</text>
+              <text x={uX} y={uY > z ? uY - 8 : uY + 12} textAnchor="middle" fill={uPnl >= 0 ? C.green : C.red} fontSize="7.5" fontFamily="monospace" fontWeight="800" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{uPnl >= 0 ? "+" : "-"}${Math.abs(uPnl).toFixed(2)}</text>
+            </g>
+          );
+        })()}
         {profitPts.length > 1 && <path d={fillD(profitPts)} fill="url(#gP2)" />}
         {lossPts.length > 1 && <path d={fillD(lossPts)} fill="url(#gL2)" />}
         <path d={pathD} fill="none" stroke="rgba(240,240,245,0.80)" strokeWidth="1.8" strokeLinejoin="round" />
@@ -388,7 +402,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
                 { label: "High", value: `$${(row._quote?.high || 0).toFixed(2)}` },
                 { label: "Low", value: `$${(row._quote?.low || 0).toFixed(2)}` },
                 { label: "IV", value: `${(row.iv || 0).toFixed(1)}%` },
-                { label: "OI", value: row.oi || "—" },
+                { label: "Math.Edge", value: row.edge !== undefined ? `${row.edge > 0 ? "+" : ""}$${row.edge.toFixed(2)}` : "—" },
                 { label: "Vol", value: row.vol || "—" },
               ].map(({ label, value }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>

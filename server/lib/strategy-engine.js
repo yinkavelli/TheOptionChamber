@@ -12,6 +12,73 @@ function calcDTE(expirationDate) {
 }
 
 /**
+ * Normal CDF for Black-Scholes
+ */
+function normalCDF(x) {
+    let t = 1 / (1 + 0.2316419 * Math.abs(x));
+    let d = 0.3989423 * Math.exp(-x * x / 2);
+    let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    if (x > 0) p = 1 - p;
+    return p;
+}
+
+/**
+ * Black-Scholes option pricing model
+ * type: 'call' or 'put'
+ * S: Underlying Price
+ * K: Strike Price
+ * T: Time to Expiration (in years)
+ * r: Risk-free rate (e.g. 0.045 for 4.5%)
+ * v: Implied Volatility (decimal)
+ */
+function blackScholes(type, S, K, T, r, v) {
+    // Handle edge cases
+    if (T <= 0 || v <= 0) {
+        return type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S);
+    }
+
+    let d1 = (Math.log(S / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
+    let d2 = d1 - v * Math.sqrt(T);
+
+    if (type === 'call') {
+        return S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2);
+    } else {
+        return K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1);
+    }
+}
+
+/**
+ * Analyze an option leg to calculate its theoretical edge
+ */
+function calcLegEdge(contract, underlyingPrice, dte) {
+    const r = 0.045; // Assumed 4.5% risk-free rate
+    const T = Math.max(dte / 365, 0.001); // Time in years
+
+    const theoPrice = blackScholes(
+        contract.contractType,
+        underlyingPrice,
+        contract.strikePrice,
+        T,
+        r,
+        contract.impliedVolatility
+    );
+
+    const marketMid = contract.midpoint || ((contract.bid + contract.ask) / 2);
+
+    // For calculating mathematical edge:
+    // If selling (credit), you want market price > theo price
+    // If buying (debit), you want market price < theo price
+    const diff = marketMid - theoPrice;
+    const edgePct = theoPrice > 0 ? (diff / theoPrice) * 100 : 0;
+
+    return {
+        theoPrice: Math.round(theoPrice * 100) / 100,
+        edgeAmount: Math.round(diff * 100) / 100,
+        edgePct: Math.round(edgePct * 10) / 10
+    };
+}
+
+/**
  * Calculate probability of profit based on delta
  * For credit spreads: POP ≈ 1 - |short delta|
  * For debit spreads: POP ≈ |long delta|
@@ -140,6 +207,7 @@ function findVerticalSpreads(contracts, underlyingPrice) {
                     underlying: underlyingPrice,
                     expiry: expiry,
                     dte,
+                    edge: Math.round((calcLegEdge(shortPut, underlyingPrice, dte).edgeAmount - calcLegEdge(longPut, underlyingPrice, dte).edgeAmount) * 100) / 100,
                     legs: [
                         { signal: 'SELL', type: 'P', strike: shortPut.strikePrice, expiry, bid: shortPut.bid, ask: shortPut.ask, delta: shortPut.delta },
                         { signal: 'BUY', type: 'P', strike: longPut.strikePrice, expiry, bid: longPut.bid, ask: longPut.ask, delta: longPut.delta },
@@ -191,6 +259,7 @@ function findVerticalSpreads(contracts, underlyingPrice) {
                     underlying: underlyingPrice,
                     expiry,
                     dte,
+                    edge: Math.round((calcLegEdge(shortCall, underlyingPrice, dte).edgeAmount - calcLegEdge(longCall, underlyingPrice, dte).edgeAmount) * 100) / 100,
                     legs: [
                         { signal: 'SELL', type: 'C', strike: shortCall.strikePrice, expiry, bid: shortCall.bid, ask: shortCall.ask, delta: shortCall.delta },
                         { signal: 'BUY', type: 'C', strike: longCall.strikePrice, expiry, bid: longCall.bid, ask: longCall.ask, delta: longCall.delta },
@@ -243,6 +312,7 @@ function findVerticalSpreads(contracts, underlyingPrice) {
                     underlying: underlyingPrice,
                     expiry,
                     dte,
+                    edge: Math.round((calcLegEdge(shortCall, underlyingPrice, dte).edgeAmount - calcLegEdge(longCall, underlyingPrice, dte).edgeAmount) * -100) / 100,
                     legs: [
                         { signal: 'BUY', type: 'C', strike: longCall.strikePrice, expiry, bid: longCall.bid, ask: longCall.ask, delta: longCall.delta },
                         { signal: 'SELL', type: 'C', strike: shortCall.strikePrice, expiry, bid: shortCall.bid, ask: shortCall.ask, delta: shortCall.delta },
@@ -295,6 +365,7 @@ function findVerticalSpreads(contracts, underlyingPrice) {
                     underlying: underlyingPrice,
                     expiry,
                     dte,
+                    edge: Math.round((calcLegEdge(shortPut, underlyingPrice, dte).edgeAmount - calcLegEdge(longPut, underlyingPrice, dte).edgeAmount) * -100) / 100,
                     legs: [
                         { signal: 'BUY', type: 'P', strike: longPut.strikePrice, expiry, bid: longPut.bid, ask: longPut.ask, delta: longPut.delta },
                         { signal: 'SELL', type: 'P', strike: shortPut.strikePrice, expiry, bid: shortPut.bid, ask: shortPut.ask, delta: shortPut.delta },
@@ -393,6 +464,7 @@ function findIronCondors(contracts, underlyingPrice) {
                     underlying: underlyingPrice,
                     expiry,
                     dte,
+                    edge: Math.round((calcLegEdge(shortPut, underlyingPrice, dte).edgeAmount - calcLegEdge(longPut, underlyingPrice, dte).edgeAmount + calcLegEdge(shortCall, underlyingPrice, dte).edgeAmount - calcLegEdge(longCall, underlyingPrice, dte).edgeAmount) * 100) / 100,
                     legs: [
                         { signal: 'SELL', type: 'P', strike: shortPut.strikePrice, expiry, bid: shortPut.bid, ask: shortPut.ask, delta: shortPut.delta },
                         { signal: 'BUY', type: 'P', strike: longPut.strikePrice, expiry, bid: longPut.bid, ask: longPut.ask, delta: longPut.delta },
@@ -470,6 +542,7 @@ function findStraddles(contracts, underlyingPrice) {
             underlying: underlyingPrice,
             expiry,
             dte,
+            edge: Math.round((-calcLegEdge(atmCall, underlyingPrice, dte).edgeAmount - calcLegEdge(atmPut, underlyingPrice, dte).edgeAmount) * 100) / 100,
             legs: [
                 { signal: 'BUY', type: 'C', strike: atmCall.strikePrice, expiry, bid: atmCall.bid, ask: atmCall.ask, delta: atmCall.delta },
                 { signal: 'BUY', type: 'P', strike: atmPut.strikePrice, expiry, bid: atmPut.bid, ask: atmPut.ask, delta: atmPut.delta },
@@ -531,6 +604,8 @@ function findSingleOptions(contracts, underlyingPrice) {
             strike: c.strikePrice,
             expiry: c.expirationDate,
             dte,
+            edge: Math.round(-calcLegEdge(c, underlyingPrice, dte).edgeAmount * 100) / 100,
+            theoPrice: calcLegEdge(c, underlyingPrice, dte).theoPrice,
             legs: [
                 { signal: 'BUY', type: isCall ? 'C' : 'P', strike: c.strikePrice, expiry: c.expirationDate, bid: c.bid, ask: c.ask, delta: c.delta },
             ],
@@ -593,6 +668,15 @@ export function generateRationale(strategy) {
 
     if (strategy.pop) {
         sigs.push(`Probability of profit at ${strategy.pop}% based on current delta positioning`);
+    }
+
+    if (strategy.edge !== undefined && strategy.edge !== 0) {
+        const isFavorable = strategy.signal === 'BUY' ? strategy.edge > 0 : strategy.edge > 0;
+        if (isFavorable && strategy.edge > 0.05) {
+            sigs.push(`Strategy presents a mathematical pricing edge of $${Math.abs(strategy.edge).toFixed(2)} vs theoretical Black-Scholes`);
+        } else if (!isFavorable && strategy.edge < -0.10) {
+            sigs.push(`Note: Trading at a -$${Math.abs(strategy.edge).toFixed(2)} theoretical disadvantage to Black-Scholes modeling`);
+        }
     }
 
     return sigs;
