@@ -415,78 +415,92 @@ function findIronCondors(contracts, underlyingPrice) {
         puts.sort((a, b) => a.strikePrice - b.strikePrice);
 
         // Find put spread side (sell higher, buy lower)
-        for (let pi = 0; pi < puts.length - 1; pi++) {
-            const shortPut = puts[pi + 1];
-            const longPut = puts[pi];
+        for (let piLong = 0; piLong < puts.length - 1; piLong++) {
+            for (let piShort = piLong + 1; piShort < puts.length && (puts[piShort].strikePrice - puts[piLong].strikePrice) <= 20; piShort++) {
+                const shortPut = puts[piShort];
+                const longPut = puts[piLong];
 
-            if (Math.abs(shortPut.delta) < 0.10 || Math.abs(shortPut.delta) > 0.25) continue;
-            if (shortPut.strikePrice >= underlyingPrice) continue;
+                // Absolute safeguard against zero-width wings
+                if (shortPut.strikePrice <= longPut.strikePrice) continue;
+                if (Math.abs(shortPut.delta) < 0.10 || Math.abs(shortPut.delta) > 0.25) continue;
+                if (shortPut.strikePrice >= underlyingPrice) continue;
 
-            // Find call spread side (sell lower, buy higher)
-            for (let ci = 0; ci < calls.length - 1; ci++) {
-                const shortCall = calls[ci];
-                const longCall = calls[ci + 1];
+                // Find call spread side (sell lower, buy higher)
+                for (let ciShort = 0; ciShort < calls.length - 1; ciShort++) {
+                    const shortCall = calls[ciShort];
+                    if (Math.abs(shortCall.delta) < 0.10 || Math.abs(shortCall.delta) > 0.25) continue;
+                    if (shortCall.strikePrice <= underlyingPrice) continue;
 
-                if (Math.abs(shortCall.delta) < 0.10 || Math.abs(shortCall.delta) > 0.25) continue;
-                if (shortCall.strikePrice <= underlyingPrice) continue;
+                    for (let ciLong = ciShort + 1; ciLong < calls.length && (calls[ciLong].strikePrice - calls[ciShort].strikePrice) <= 20; ciLong++) {
+                        const longCall = calls[ciLong];
 
-                const putCredit = shortPut.midpoint - longPut.midpoint;
-                const callCredit = shortCall.midpoint - longCall.midpoint;
-                const totalCredit = putCredit + callCredit;
+                        // Absolute safeguard against zero-width wings
+                        if (longCall.strikePrice <= shortCall.strikePrice) continue;
+                        if (shortCall.strikePrice <= underlyingPrice) continue;
 
-                const putWidth = shortPut.strikePrice - longPut.strikePrice;
-                const callWidth = longCall.strikePrice - shortCall.strikePrice;
-                const maxRisk = Math.max(putWidth, callWidth) - totalCredit;
+                        const putCredit = shortPut.midpoint - longPut.midpoint;
+                        const callCredit = shortCall.midpoint - longCall.midpoint;
+                        const totalCredit = putCredit + callCredit;
 
-                if (totalCredit <= 0 || maxRisk <= 0) continue;
+                        const putWidth = shortPut.strikePrice - longPut.strikePrice;
+                        const callWidth = longCall.strikePrice - shortCall.strikePrice;
 
-                const breakEvenWidth = shortCall.strikePrice - shortPut.strikePrice;
-                if (breakEvenWidth / underlyingPrice < 0.10) continue;
+                        // Require wings to be relatively balanced (within $5 of each other max mismatch)
+                        if (Math.abs(putWidth - callWidth) > 5) continue;
 
-                const pop = Math.min(calcPOP(shortPut.delta, 'credit'), calcPOP(shortCall.delta, 'credit'));
-                const rr = totalCredit / maxRisk;
-                const totalTheta = Math.abs(shortPut.theta + shortCall.theta - longPut.theta - longCall.theta);
-                const thetaPerRisk = totalTheta / maxRisk;
-                const liquidity = (
-                    calcLiquidityScore(shortPut.bid, shortPut.ask, shortPut.volume) +
-                    calcLiquidityScore(longPut.bid, longPut.ask, longPut.volume) +
-                    calcLiquidityScore(shortCall.bid, shortCall.ask, shortCall.volume) +
-                    calcLiquidityScore(longCall.bid, longCall.ask, longCall.volume)
-                ) / 4;
-                const ivScore = calcIVScore((shortPut.impliedVolatility + shortCall.impliedVolatility) / 2, 'credit');
+                        const maxRisk = Math.max(putWidth, callWidth) - totalCredit;
 
-                const score = scoreStrategy({ pop, riskRewardRatio: rr, thetaPerRisk, liquidityScore: liquidity, ivScore, strategyClass: 'credit' });
-                if (score < 55) continue;
+                        if (totalCredit <= 0 || maxRisk <= 0) continue;
 
-                strategies.push({
-                    strategy: 'Iron Condor',
-                    type: 'Credit Neutral',
-                    signal: 'SELL',
-                    score,
-                    pop: Math.round(pop),
-                    symbol: shortPut.underlyingTicker,
-                    underlying: underlyingPrice,
-                    expiry,
-                    dte,
-                    edge: Math.round((calcLegEdge(shortPut, underlyingPrice, dte).edgeAmount - calcLegEdge(longPut, underlyingPrice, dte).edgeAmount + calcLegEdge(shortCall, underlyingPrice, dte).edgeAmount - calcLegEdge(longCall, underlyingPrice, dte).edgeAmount) * 100) / 100,
-                    legs: [
-                        { signal: 'SELL', type: 'P', strike: shortPut.strikePrice, expiry, bid: shortPut.bid, ask: shortPut.ask, delta: shortPut.delta },
-                        { signal: 'BUY', type: 'P', strike: longPut.strikePrice, expiry, bid: longPut.bid, ask: longPut.ask, delta: longPut.delta },
-                        { signal: 'SELL', type: 'C', strike: shortCall.strikePrice, expiry, bid: shortCall.bid, ask: shortCall.ask, delta: shortCall.delta },
-                        { signal: 'BUY', type: 'C', strike: longCall.strikePrice, expiry, bid: longCall.bid, ask: longCall.ask, delta: longCall.delta },
-                    ],
-                    credit: totalCredit,
-                    maxRisk,
-                    maxProfit: totalCredit,
-                    breakeven: `${(shortPut.strikePrice - totalCredit).toFixed(2)} / ${(shortCall.strikePrice + totalCredit).toFixed(2)}`,
-                    bid: Math.round(((shortPut.bid - longPut.ask) + (shortCall.bid - longCall.ask)) * 100) / 100,
-                    ask: Math.round(((shortPut.ask - longPut.bid) + (shortCall.ask - longCall.bid)) * 100) / 100,
-                    delta: shortPut.delta + shortCall.delta - longPut.delta - longCall.delta,
-                    theta: shortPut.theta + shortCall.theta - longPut.theta - longCall.theta,
-                    iv: (shortPut.impliedVolatility + shortCall.impliedVolatility) / 2,
-                    vol: `${(([shortPut, longPut, shortCall, longCall].reduce((s, c) => s + c.volume, 0)) / 1000).toFixed(1)}k`,
-                    oi: `${(([shortPut, longPut, shortCall, longCall].reduce((s, c) => s + c.openInterest, 0)) / 1000).toFixed(1)}k`,
-                });
+                        const breakEvenWidth = shortCall.strikePrice - shortPut.strikePrice;
+                        if (breakEvenWidth / underlyingPrice < 0.10) continue;
+
+                        const pop = Math.min(calcPOP(shortPut.delta, 'credit'), calcPOP(shortCall.delta, 'credit'));
+                        const rr = totalCredit / maxRisk;
+                        const totalTheta = Math.abs(shortPut.theta + shortCall.theta - longPut.theta - longCall.theta);
+                        const thetaPerRisk = totalTheta / maxRisk;
+                        const liquidity = (
+                            calcLiquidityScore(shortPut.bid, shortPut.ask, shortPut.volume) +
+                            calcLiquidityScore(longPut.bid, longPut.ask, longPut.volume) +
+                            calcLiquidityScore(shortCall.bid, shortCall.ask, shortCall.volume) +
+                            calcLiquidityScore(longCall.bid, longCall.ask, longCall.volume)
+                        ) / 4;
+                        const ivScore = calcIVScore((shortPut.impliedVolatility + shortCall.impliedVolatility) / 2, 'credit');
+
+                        const score = scoreStrategy({ pop, riskRewardRatio: rr, thetaPerRisk, liquidityScore: liquidity, ivScore, strategyClass: 'credit' });
+                        if (score < 55) continue;
+
+                        strategies.push({
+                            strategy: 'Iron Condor',
+                            type: 'Credit Neutral',
+                            signal: 'SELL',
+                            score,
+                            pop: Math.round(pop),
+                            symbol: shortPut.underlyingTicker,
+                            underlying: underlyingPrice,
+                            expiry,
+                            dte,
+                            edge: Math.round((calcLegEdge(shortPut, underlyingPrice, dte).edgeAmount - calcLegEdge(longPut, underlyingPrice, dte).edgeAmount + calcLegEdge(shortCall, underlyingPrice, dte).edgeAmount - calcLegEdge(longCall, underlyingPrice, dte).edgeAmount) * 100) / 100,
+                            legs: [
+                                { signal: 'SELL', type: 'P', strike: shortPut.strikePrice, expiry, bid: shortPut.bid, ask: shortPut.ask, delta: shortPut.delta },
+                                { signal: 'BUY', type: 'P', strike: longPut.strikePrice, expiry, bid: longPut.bid, ask: longPut.ask, delta: longPut.delta },
+                                { signal: 'SELL', type: 'C', strike: shortCall.strikePrice, expiry, bid: shortCall.bid, ask: shortCall.ask, delta: shortCall.delta },
+                                { signal: 'BUY', type: 'C', strike: longCall.strikePrice, expiry, bid: longCall.bid, ask: longCall.ask, delta: longCall.delta },
+                            ],
+                            credit: totalCredit,
+                            maxRisk,
+                            maxProfit: totalCredit,
+                            breakeven: `${(shortPut.strikePrice - totalCredit).toFixed(2)} / ${(shortCall.strikePrice + totalCredit).toFixed(2)}`,
+                            bid: Math.round(((shortPut.bid - longPut.ask) + (shortCall.bid - longCall.ask)) * 100) / 100,
+                            ask: Math.round(((shortPut.ask - longPut.bid) + (shortCall.ask - longCall.bid)) * 100) / 100,
+                            delta: shortPut.delta + shortCall.delta - longPut.delta - longCall.delta,
+                            theta: shortPut.theta + shortCall.theta - longPut.theta - longCall.theta,
+                            iv: (shortPut.impliedVolatility + shortCall.impliedVolatility) / 2,
+                            vol: `${(([shortPut, longPut, shortCall, longCall].reduce((s, c) => s + c.volume, 0)) / 1000).toFixed(1)}k`,
+                            oi: `${(([shortPut, longPut, shortCall, longCall].reduce((s, c) => s + c.openInterest, 0)) / 1000).toFixed(1)}k`,
+                        });
+                    }
+                }
             }
         }
     }
@@ -691,11 +705,22 @@ export function generateRationale(strategy) {
  * Main entry point — analyze contracts and return scored strategies
  */
 export function analyzeStrategies(contracts, underlyingPrice) {
+    // Stage 0: Deduplicate duplicate strikes
+    // Sometimes MarketData returns multiple identical lines per strike (e.g. standard vs weekly identicals)
+    const uniqueMap = new Map();
+    for (const c of contracts) {
+        const key = `${c.contractType}-${c.strikePrice}-${c.expirationDate}`;
+        if (!uniqueMap.has(key) || (c.volume > uniqueMap.get(key).volume)) {
+            uniqueMap.set(key, c);
+        }
+    }
+    const cleanContracts = Array.from(uniqueMap.values());
+
     const strategies = [
-        ...findVerticalSpreads(contracts, underlyingPrice),
-        ...findIronCondors(contracts, underlyingPrice),
-        ...findStraddles(contracts, underlyingPrice),
-        ...findSingleOptions(contracts, underlyingPrice),
+        ...findVerticalSpreads(cleanContracts, underlyingPrice),
+        ...findIronCondors(cleanContracts, underlyingPrice),
+        ...findStraddles(cleanContracts, underlyingPrice),
+        ...findSingleOptions(cleanContracts, underlyingPrice),
     ];
 
     // Sort by score descending
