@@ -75,15 +75,17 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-    console.log(`\n🏛️  The Option Chamber API Server`);
-    console.log(`   Running on http://localhost:${PORT}`);
-    console.log(`   Health: http://localhost:${PORT}/api/health\n`);
-    console.log(`   APIs configured:`);
-    console.log(`   ├─ 🥇 Yahoo Finance (quotes, primary)`);
-    console.log(`   ├─ 🥈 MarketData.app (${process.env.MARKETDATA_API_KEY ? '✅' : '❌'}) — options chains, primary`);
-    console.log(`   ├─ 🥉 Alpha Vantage  (${process.env.ALPHAVANTAGE_API_KEY ? '✅' : '❌'}) — fundamentals, news`);
-    console.log(`   └─  4  Massive.com    (${process.env.MASSIVE_API_KEY ? '✅' : '❌'}) — options fallback\n`);
-});
+if (!process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`\n🏛️  The Option Chamber API Server`);
+        console.log(`   Running on http://localhost:${PORT}`);
+        console.log(`   Health: http://localhost:${PORT}/api/health\n`);
+        console.log(`   APIs configured:`);
+        console.log(`   ├─ 🥇 Yahoo Finance (quotes, primary)`);
+        console.log(`   ├─ 🥈 MarketData.app (${process.env.MARKETDATA_API_KEY ? '✅' : '❌'}) — options chains, primary`);
+        console.log(`   ├─ 🥉 Alpha Vantage  (${process.env.ALPHAVANTAGE_API_KEY ? '✅' : '❌'}) — fundamentals, news`);
+        console.log(`   └─  4  Massive.com    (${process.env.MASSIVE_API_KEY ? '✅' : '❌'}) — options fallback\n`);
+    });
+}
 
 export default app;
