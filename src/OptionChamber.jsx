@@ -639,7 +639,7 @@ export default function OptionChamber() {
       if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
       return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
-  }, [results, strategy, sortKey, sortDir]);
+  }, [results, strategy, sortKey, sortDir, chipFilter]);
 
   // Summary stats for pills
   const bullishCount = results.filter(r => (r.change || 0) > 0).length;
