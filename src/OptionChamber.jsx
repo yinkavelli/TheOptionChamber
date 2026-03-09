@@ -513,7 +513,20 @@ function FilterModal({ open, onClose, strategy, setStrategy, sortKey, setSortKey
         <div style={{ width: 36, height: 4, background: C.surfaceHi, borderRadius: 2, margin: "12px auto 18px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>Filter & Sort</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 22, lineHeight: 1 }}>×</button>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <button
+              onClick={() => {
+                setStrategy(0);
+                setSortKey("score");
+                setSortDir("desc");
+                setFilters({ minVolume: "1M", minMarketCap: "10B", ivRange: "10-70%" });
+              }}
+              style={{ background: C.surfaceHi, color: C.sub, padding: "4px 10px", borderRadius: 8, fontSize: 10, fontWeight: 600, cursor: "pointer", border: `1px solid ${C.border}`, alignSelf: "center", marginBottom: 2 }}
+            >
+              RESET
+            </button>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 22, lineHeight: 1 }}>×</button>
+          </div>
         </div>
 
         {/* Strategy */}
