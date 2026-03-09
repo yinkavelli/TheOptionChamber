@@ -105,6 +105,10 @@ async function scanSingleStock(ticker) {
         // Non-blocking enrichment
     }
 
+    // Attach change percent to strategies for UI summary pills
+    const changePct = quote.regularMarketChangePercent || quote.changePercent || quote.change || 0;
+    strategies.forEach(s => { s.change = changePct; });
+
     return {
         ticker,
         quote,
