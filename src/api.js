@@ -1,19 +1,29 @@
 // API client for frontend — all requests go through the Express proxy
 const API_BASE = '/api';
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options = {}, timeoutMs = 30000) {
     const url = `${API_BASE}${path}`;
-    const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
-        ...options,
-    });
-    if (!res.ok) {
-        const body = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(body.error || `API error ${res.status}`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(url, {
+            headers: { 'Content-Type': 'application/json', ...options.headers },
+            signal: controller.signal,
+            ...options,
+        });
+        clearTimeout(timer);
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({ error: res.statusText }));
+            throw new Error(body.error || `API error ${res.status}`);
+        }
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'API returned unsuccessful');
+        return data.data;
+    } catch (err) {
+        clearTimeout(timer);
+        if (err.name === 'AbortError') throw new Error('Request timed out. The ticker may be invalid or the server is slow.');
+        throw err;
     }
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'API returned unsuccessful');
-    return data.data;
 }
 
 export const api = {

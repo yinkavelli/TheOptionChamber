@@ -614,6 +614,19 @@ export default function OptionChamber() {
   const [filters, setFilters] = useState({ minVolume: "1M", minMarketCap: "10B", ivRange: "10-70%" });
   const [chipFilter, setChipFilter] = useState(null); // "bull" | "bear" | "highScore" | "topMove" | null
 
+  const handleReset = () => {
+    setSearch("");
+    setResults([]);
+    setRan(false);
+    setRunning(false);
+    setError(null);
+    setStrategy(0);
+    setSortKey("score");
+    setSortDir("desc");
+    setFilters({ minVolume: "1M", minMarketCap: "10B", ivRange: "10-70%" });
+    setChipFilter(null);
+  };
+
   const handleRun = async () => {
     setRunning(true); setError(null); setChipFilter(null);
     try {
@@ -680,11 +693,40 @@ export default function OptionChamber() {
         }}>
           {/* Title row */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: ran && results.length > 0 ? 10 : 14 }}>
-            <div>
-              <h1 style={{ fontSize: isDesktop ? 28 : 24, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1 }}>
-                <span style={{ color: C.text }}>Option</span><span style={{ color: C.muted }}> Chamber</span>
-              </h1>
-              <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontWeight: 500 }}>{TODAY}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {/* Home / Reset button — visible once a scan has been run */}
+              {ran && (
+                <button
+                  onClick={handleReset}
+                  title="Back to home"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 10,
+                    width: 34, height: 34,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", flexShrink: 0,
+                    transition: "background 0.15s, border-color 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.10)"; e.currentTarget.style.borderColor = C.borderHi; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = C.border; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.sub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                </button>
+              )}
+              <div>
+                <h1
+                  onClick={handleReset}
+                  style={{ fontSize: isDesktop ? 28 : 24, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1, cursor: "pointer", userSelect: "none" }}
+                  title="Reset to home"
+                >
+                  <span style={{ color: C.text }}>Option</span><span style={{ color: C.muted }}> Chamber</span>
+                </h1>
+                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontWeight: 500 }}>{TODAY}</div>
+              </div>
             </div>
             {/* Desktop pills — inline right of title */}
             {isDesktop && ran && results.length > 0 && (

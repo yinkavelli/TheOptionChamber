@@ -15,8 +15,11 @@ const HEADERS = {
 
 async function yahooFetch(url, retries = 2) {
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
-      const res = await fetch(url, { headers: HEADERS, timeout: 10000 });
+      const res = await fetch(url, { headers: HEADERS, signal: controller.signal });
+      clearTimeout(timer);
       if (!res.ok) {
         if (attempt < retries) {
           await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
@@ -26,6 +29,7 @@ async function yahooFetch(url, retries = 2) {
       }
       return await res.json();
     } catch (err) {
+      clearTimeout(timer);
       if (attempt < retries) {
         await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
         continue;
