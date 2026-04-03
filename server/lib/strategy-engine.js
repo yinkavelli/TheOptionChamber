@@ -726,11 +726,15 @@ export function analyzeStrategies(contracts, underlyingPrice) {
     // Sort by score descending
     strategies.sort((a, b) => b.score - a.score);
 
-    // Add rationale to each
+    // Add rationale + computed fields to each
     for (const s of strategies) {
         s.rationale = generateRationale(s);
         // Ensure change field exists for UI
         if (s.change === undefined) s.change = 0;
+        // Risk:Reward ratio — maxProfit / maxRisk, capped at 999 for unlimited upside strategies
+        const mp = s.maxProfit === Infinity ? (s.maxRisk || 1) * 999 : (s.maxProfit || 0);
+        const mr = s.maxRisk || 1;
+        s.riskReward = Math.round((mp / mr) * 100) / 100;
     }
 
     return strategies;

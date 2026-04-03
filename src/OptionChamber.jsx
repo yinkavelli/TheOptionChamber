@@ -283,6 +283,13 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
   const strike = row.strike || row.legs?.[0]?.strike || 0;
   const expiry = row.expiry || row.legs?.[0]?.expiry || '';
 
+  // Risk / Reward calculations
+  const maxProfit = row.maxProfit || 0;
+  const maxRisk = row.maxRisk || row.debit || 0;
+  const rr = row.riskReward || (maxRisk > 0 ? Math.round((maxProfit === Infinity ? 999 : maxProfit / maxRisk) * 100) / 100 : 0);
+  const rrColor = rr >= 2 ? C.green : rr >= 1 ? C.amber : C.red;
+  const fmtPnL = (v) => v === Infinity ? '∞' : `$${Math.abs(v).toFixed(0)}`;
+
   const greeks = {
     Delta: (row.delta || 0).toFixed(3),
     Gamma: (row.gamma || (0.031 + Math.abs(row.delta || 0) * 0.015)).toFixed(4),
@@ -303,44 +310,84 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
       {/* ── Collapsed row header ── */}
       <div onClick={() => setExpanded(e => !e)}
         style={{
-          display: "flex", alignItems: "center", padding: "12px 14px", cursor: "pointer", gap: 10,
+          padding: "12px 14px", cursor: "pointer",
           background: expanded ? C.surfaceHi : "transparent", transition: "background 0.2s"
         }}>
 
-        {/* Score ring */}
-        <div style={{ flexShrink: 0 }}>
-          <ScoreRing score={score} />
+        {/* Top row: Score · Symbol · Price · Chevron */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Score ring */}
+          <div style={{ flexShrink: 0 }}>
+            <ScoreRing score={score} />
+          </div>
+
+          {/* Symbol + strategy */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: 0.3, marginBottom: 3 }}>
+              {row.symbol}
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+              <span style={{ color: badge.fg }}>{row.strategy}</span>
+              <span style={{ color: C.muted }}> · </span>
+              <span style={{ color: row.signal === "BUY" ? C.green : C.red }}>{row.signal}</span>
+            </div>
+            <div style={{ fontSize: 10, color: C.muted, fontWeight: 400 }}>
+              {"\u200B"}Exp {formatExpiry(expiry)}
+            </div>
+          </div>
+
+          {/* Right: price stack */}
+          <div style={{ textAlign: "right", flexShrink: 0, minWidth: 72 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>${(row.underlying || 0).toFixed(2)}</div>
+            <div style={{ fontSize: 10, fontWeight: 600, color: pos ? C.green : C.red, whiteSpace: "nowrap" }}>{pos ? "▲" : "▼"}{Math.abs(row.change || 0).toFixed(2)}%</div>
+          </div>
+
+          {/* Chevron */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round"
+            style={{ transition: "transform 0.25s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </div>
 
-        {/* Symbol + strategy — takes all remaining space, no badges/frames */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Line 1: symbol */}
-          <div style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: 0.3, marginBottom: 3, textDecoration: "none" }}>
-            {row.symbol}
+        {/* Bottom row: Key stats strip — always visible */}
+        <div style={{
+          display: "flex", gap: isDesktop ? 12 : 6, marginTop: 10, paddingTop: 8,
+          borderTop: `1px solid ${C.border}`, flexWrap: "wrap",
+        }}>
+          {/* Max Profit */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Profit</span>
+            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.green }}>{fmtPnL(maxProfit)}</span>
           </div>
-          {/* Line 2: strategy · signal in colour */}
-          <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2, textDecoration: "none" }}>
-            <span style={{ color: badge.fg }}>{row.strategy}</span>
-            <span style={{ color: C.muted }}> · </span>
-            <span style={{ color: row.signal === "BUY" ? C.green : C.red }}>{row.signal}</span>
+          {/* Max Loss */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.red, flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Risk</span>
+            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.red }}>{fmtPnL(maxRisk)}</span>
           </div>
-          {/* Line 3: expiry — using a zero-width space prefix to prevent canvas markdown parsing */}
-          <div style={{ fontSize: 10, color: C.muted, fontWeight: 400, textDecoration: "none" }}>
-            {"\u200B"}Exp {formatExpiry(expiry)}
+          {/* R:R Ratio */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={rrColor} strokeWidth="3" strokeLinecap="round"><path d="M4 14l8-8 8 8" /></svg>
+            <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>R:R</span>
+            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: rrColor }}>{rr >= 999 ? '∞' : rr.toFixed(2) + 'x'}</span>
           </div>
+          {/* POP */}
+          {row.pop > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="3" strokeLinecap="round"><circle cx="12" cy="12" r="8" /></svg>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>POP</span>
+              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.blue }}>{row.pop}%</span>
+            </div>
+          )}
+          {/* DTE */}
+          {row.dte > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>DTE</span>
+              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.sub }}>{row.dte}d</span>
+            </div>
+          )}
         </div>
-
-        {/* Right: price stack — fixed width, no flex squash */}
-        <div style={{ textAlign: "right", flexShrink: 0, minWidth: 72 }}>
-          <div style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>${(row.underlying || 0).toFixed(2)}</div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: pos ? C.green : C.red, whiteSpace: "nowrap" }}>{pos ? "▲" : "▼"}{Math.abs(row.change || 0).toFixed(2)}%</div>
-        </div>
-
-        {/* Chevron */}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round"
-          style={{ transition: "transform 0.25s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
       </div>
 
       {/* ── Expanded content ── */}
@@ -488,6 +535,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
 const STRATEGIES = ["All", "Single Option", "Call Spread", "Put Spread", "Iron Condor", "Straddle", "Bear Call Spread"];
 const SORT_OPTIONS = [
   { key: "score", label: "Score" },
+  { key: "riskReward", label: "R:R Ratio" },
   { key: "symbol", label: "Symbol" },
   { key: "underlying", label: "Last Price" },
   { key: "delta", label: "Delta" },

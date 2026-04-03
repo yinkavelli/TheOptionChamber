@@ -69,17 +69,13 @@ async function scanSingleStock(ticker) {
     const underlyingPrice = quote.price || quote.regularMarketPrice || 0;
     console.log(`[Screener] ${ticker} price: $${underlyingPrice}`);
 
-    // Step 2: Fetch option chain — MarketData.app primary, Massive.com fallback
+    // Step 2: Fetch option chain — MarketData.app (sole source)
     let contracts = [];
     try {
         contracts = await marketdata.getStrategyChain(ticker, underlyingPrice);
     } catch (err) {
-        console.warn(`[Screener] MarketData.app failed for ${ticker}: ${err.message}. Falling back to Massive.com...`);
-        try {
-            contracts = await massive.getStrategyChain(ticker, underlyingPrice);
-        } catch (err2) {
-            console.warn(`[Screener] Massive.com fallback also failed for ${ticker}:`, err2.message);
-        }
+        console.warn(`[Screener] MarketData.app failed for ${ticker}: ${err.message}`);
+        throw new Error(`Options data unavailable for ${ticker}: ${err.message}`);
     }
 
     console.log(`[Screener] ${ticker}: ${contracts.length} valid contracts`);
