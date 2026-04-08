@@ -702,9 +702,170 @@ export function generateRationale(strategy) {
 }
 
 /**
- * Main entry point — analyze contracts and return scored strategies
+ * Estimate Reg-T initial margin for a strategy (per 1 contract, in dollars)
+ * Single options (long): margin = premium × 100
+ * Debit spreads: margin = net debit × 100
+ * Credit spreads: margin = (strike width - net credit) × 100
+ * Iron condors: margin = max(put wing, call wing) × 100 - net credit × 100
+ * Long straddle: margin = total premium × 100
  */
-export function analyzeStrategies(contracts, underlyingPrice) {
+function estimateMargin(strategy) {
+    const multiplier = 100; // standard equity option
+    const name = strategy.strategy;
+
+    if (name === 'Single Option') {
+        // Long option: full premium is max risk
+        return Math.round((strategy.premium || strategy.maxRisk || 0) * multiplier);
+    }
+
+    if (name === 'Call Spread' || name === 'Put Spread') {
+        // Debit vertical: net debit is max risk
+        return Math.round((strategy.debit || strategy.maxRisk || 0) * multiplier);
+    }
+
+    if (name === 'Bull Put Spread' || name === 'Bear Call Spread') {
+        // Credit vertical: width - credit = max risk
+        return Math.round((strategy.maxRisk || 0) * multiplier);
+    }
+
+    if (name === 'Iron Condor') {
+        // Max of put/call wing widths minus net credit
+        return Math.round((strategy.maxRisk || 0) * multiplier);
+    }
+
+    if (name === 'Straddle') {
+        // Long straddle: total premium
+        return Math.round((strategy.debit || strategy.maxRisk || 0) * multiplier);
+    }
+
+    // Fallback
+    return Math.round((strategy.maxRisk || 0) * multiplier);
+}
+
+/**
+ * Calculate scenario P&L — reprice all legs at targetPrice with reduced DTE
+ * @param {Object} strategy - A strategy object with legs[]
+ * @param {number} targetPrice - The expected underlying price
+ * @param {number} timeframeDays - Days until the expected move
+ * @returns {number} Net P&L per contract in dollars
+ */
+function calcScenarioPnL(strategy, targetPrice, timeframeDays) {
+    const r = 0.045;
+    const legs = strategy.legs || [];
+    let totalPnL = 0;
+
+    for (const leg of legs) {
+        const dte = strategy.dte || 30;
+        const remainingDays = Math.max(1, dte - timeframeDays);
+        const T = Math.max(0.001, remainingDays / 365);
+        const iv = strategy.iv || 0.30;
+        const isCall = leg.type === 'C';
+        const entryMid = ((leg.bid || 0) + (leg.ask || 0)) / 2;
+
+        const newTheo = blackScholes(
+            isCall ? 'call' : 'put',
+            targetPrice,
+            leg.strike,
+            T,
+            r,
+            iv
+        );
+
+        if (leg.signal === 'BUY') {
+            totalPnL += (newTheo - entryMid);
+        } else {
+            totalPnL += (entryMid - newTheo);
+        }
+    }
+
+    return Math.round(totalPnL * 100) / 100;
+}
+
+/**
+ * Score a strategy against a user-defined scenario
+ * Weights shift based on confidence level
+ * @param {Object} strategy - scored strategy object
+ * @param {Object} scenario - { direction, magnitude, timeframeDays, confidence }
+ * @param {number} underlyingPrice - current underlying price
+ * @returns {Object} { scenarioScore, scenarioPnL, targetPrice }
+ */
+function scoreStrategyForScenario(strategy, scenario, underlyingPrice) {
+    const { direction, magnitude, timeframeDays, confidence = 'medium' } = scenario;
+
+    // Calculate target price
+    let targetPrice;
+    if (direction === 'bullish') {
+        targetPrice = underlyingPrice * (1 + magnitude);
+    } else if (direction === 'bearish') {
+        targetPrice = underlyingPrice * (1 - magnitude);
+    } else {
+        targetPrice = underlyingPrice; // neutral
+    }
+
+    // 1. Scenario P&L score (0-100)
+    const scenarioPnL = calcScenarioPnL(strategy, targetPrice, timeframeDays);
+    const maxRisk = strategy.maxRisk || 1;
+    const pnlPct = scenarioPnL / maxRisk; // as fraction of max risk
+    // Normalize: -1.0 (full loss) = 0, 0 = 40, +1.0 (full profit) = 100
+    const pnlScore = Math.max(0, Math.min(100, 40 + pnlPct * 60));
+
+    // 2. Directional alignment score (0-100)
+    const stratDelta = strategy.delta || 0;
+    let alignScore = 50; // default neutral
+    if (direction === 'bullish') {
+        alignScore = stratDelta > 0 ? Math.min(100, stratDelta * 200) : Math.max(0, 50 + stratDelta * 100);
+    } else if (direction === 'bearish') {
+        alignScore = stratDelta < 0 ? Math.min(100, Math.abs(stratDelta) * 200) : Math.max(0, 50 - stratDelta * 100);
+    } else {
+        // Neutral: reward near-zero delta
+        alignScore = Math.max(0, 100 - Math.abs(stratDelta) * 300);
+    }
+
+    // 3. POP score (existing)
+    const popScore = Math.min(100, strategy.pop || 50);
+
+    // 4. Margin efficiency score
+    const margin = strategy.estimatedMargin || estimateMargin(strategy);
+    const rom = margin > 0 ? scenarioPnL / (margin / 100) : 0; // per-dollar return
+    const marginScore = Math.max(0, Math.min(100, rom * 120)); // 0.83 rom = 100
+
+    // 5. Liquidity + IV (reuse existing score components)
+    const existingScore = strategy.score || 50;
+    const liquidIvScore = existingScore * 0.30 / 0.15; // extract the 15% portion, renormalize
+    const combinedLiqIv = Math.min(100, liquidIvScore * 0.5); // cap at 100
+
+    // Weight by confidence
+    let w;
+    if (confidence === 'high') {
+        w = { pnl: 0.45, align: 0.20, pop: 0.05, margin: 0.15, liqIv: 0.15 };
+    } else if (confidence === 'low') {
+        w = { pnl: 0.25, align: 0.15, pop: 0.25, margin: 0.15, liqIv: 0.20 };
+    } else {
+        w = { pnl: 0.35, align: 0.20, pop: 0.15, margin: 0.15, liqIv: 0.15 };
+    }
+
+    const scenarioScore = Math.round(
+        pnlScore * w.pnl +
+        alignScore * w.align +
+        popScore * w.pop +
+        marginScore * w.margin +
+        combinedLiqIv * w.liqIv
+    );
+
+    return {
+        scenarioScore: Math.max(0, Math.min(100, scenarioScore)),
+        scenarioPnL,
+        targetPrice: Math.round(targetPrice * 100) / 100,
+    };
+}
+
+/**
+ * Main entry point — analyze contracts and return scored strategies
+ * @param {Array} contracts - raw option contracts
+ * @param {number} underlyingPrice - current underlying price
+ * @param {Object|null} scenario - optional { direction, magnitude, timeframeDays, confidence }
+ */
+export function analyzeStrategies(contracts, underlyingPrice, scenario = null) {
     // Stage 0: Deduplicate duplicate strikes
     // Sometimes MarketData returns multiple identical lines per strike (e.g. standard vs weekly identicals)
     const uniqueMap = new Map();
@@ -726,7 +887,7 @@ export function analyzeStrategies(contracts, underlyingPrice) {
     // Sort by score descending
     strategies.sort((a, b) => b.score - a.score);
 
-    // Add rationale + computed fields to each
+    // Add rationale, margin, computed fields to each
     for (const s of strategies) {
         s.rationale = generateRationale(s);
         // Ensure change field exists for UI
@@ -735,6 +896,40 @@ export function analyzeStrategies(contracts, underlyingPrice) {
         const mp = s.maxProfit === Infinity ? (s.maxRisk || 1) * 999 : (s.maxProfit || 0);
         const mr = s.maxRisk || 1;
         s.riskReward = Math.round((mp / mr) * 100) / 100;
+
+        // Margin estimation (always computed, regardless of scenario)
+        s.estimatedMargin = estimateMargin(s);
+
+        // Return on margin (generic mode: maxProfit / margin)
+        if (s.estimatedMargin > 0) {
+            const profitForRom = s.maxProfit === Infinity ? s.estimatedMargin * 9.99 : (s.maxProfit || 0) * 100;
+            s.returnOnMargin = Math.round((profitForRom / s.estimatedMargin) * 100) / 100;
+        } else {
+            s.returnOnMargin = 0;
+        }
+
+        // Scenario fields default to null
+        s.scenarioPnL = null;
+        s.scenarioScore = null;
+        s.targetPrice = null;
+    }
+
+    // If scenario is provided, compute scenario scores and re-rank
+    if (scenario && scenario.direction && scenario.magnitude != null) {
+        for (const s of strategies) {
+            const result = scoreStrategyForScenario(s, scenario, underlyingPrice);
+            s.scenarioPnL = result.scenarioPnL;
+            s.scenarioScore = result.scenarioScore;
+            s.targetPrice = result.targetPrice;
+
+            // Update return on margin to use scenario P&L when available
+            if (s.estimatedMargin > 0 && s.scenarioPnL != null) {
+                s.returnOnMargin = Math.round((s.scenarioPnL * 100 / s.estimatedMargin) * 100) / 100;
+            }
+        }
+
+        // Re-sort by scenario score
+        strategies.sort((a, b) => (b.scenarioScore || 0) - (a.scenarioScore || 0));
     }
 
     return strategies;

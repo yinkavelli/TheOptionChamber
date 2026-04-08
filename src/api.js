@@ -44,13 +44,13 @@ export const api = {
     getContracts: (ticker) => apiFetch(`/options/contracts/${encodeURIComponent(ticker)}`),
 
     // Screener
-    scanSingle: (ticker) => apiFetch('/screener/scan', {
+    scanSingle: (ticker, scenario = null) => apiFetch('/screener/scan', {
         method: 'POST',
-        body: JSON.stringify({ mode: 'single', ticker }),
+        body: JSON.stringify({ mode: 'single', ticker, ...(scenario ? { scenario } : {}) }),
     }),
-    scanMarketWide: (params = {}) => apiFetch('/screener/scan', {
+    scanMarketWide: (params = {}, scenario = null) => apiFetch('/screener/scan', {
         method: 'POST',
-        body: JSON.stringify({ mode: 'market-wide', ...params }),
+        body: JSON.stringify({ mode: 'market-wide', ...params, ...(scenario ? { scenario } : {}) }),
     }),
 
     // Health check

@@ -29,18 +29,19 @@ router.post('/scan', async (req, res) => {
         ticker = null,
         minVolume = 1000000,
         minMarketCap = 10000000000,
+        scenario = null,
     } = req.body;
 
     try {
         if (mode === 'single' && ticker) {
             // Single stock scan
-            const result = await scanSingleStock(ticker);
+            const result = await scanSingleStock(ticker, scenario);
             return res.json({ success: true, data: result });
         }
 
         if (mode === 'market-wide') {
             // Market-wide scan — top 20 most active stocks
-            const result = await scanMarketWide(minVolume, minMarketCap);
+            const result = await scanMarketWide(minVolume, minMarketCap, scenario);
             return res.json({ success: true, data: result });
         }
 
@@ -51,7 +52,7 @@ router.post('/scan', async (req, res) => {
     }
 });
 
-async function scanSingleStock(ticker) {
+async function scanSingleStock(ticker, scenario = null) {
     // Step 1: Get underlying price first (Yahoo primary, AV fallback)
     let quote;
     try {
@@ -90,8 +91,8 @@ async function scanSingleStock(ticker) {
     }
 
     // Step 3: Run strategy engine
-    const strategies = analyzeStrategies(contracts, underlyingPrice);
-    console.log(`[Screener] ${ticker}: ${strategies.length} strategies found (score >= 65)`);
+    const strategies = analyzeStrategies(contracts, underlyingPrice, scenario);
+    console.log(`[Screener] ${ticker}: ${strategies.length} strategies found (score >= 55)${scenario ? ' [SCENARIO MODE]' : ''}`);
 
     // Step 4: Try to enrich with fundamentals (non-blocking)
     let fundamentals = null;
@@ -117,7 +118,7 @@ async function scanSingleStock(ticker) {
 /**
  * Scan market-wide — top 20 most active stocks
  */
-async function scanMarketWide(minVolume, minMarketCap) {
+async function scanMarketWide(minVolume, minMarketCap, scenario = null) {
     // Step 1: Get most active stocks from Yahoo Finance
     let stocks;
     try {
@@ -139,7 +140,7 @@ async function scanMarketWide(minVolume, minMarketCap) {
     for (let i = 0; i < tickers.length; i += batchSize) {
         const batch = tickers.slice(i, i + batchSize);
         const results = await Promise.allSettled(
-            batch.map(t => scanSingleStock(t))
+            batch.map(t => scanSingleStock(t, scenario))
         );
 
         for (const result of results) {

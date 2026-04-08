@@ -290,6 +290,13 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
   const rrColor = rr >= 2 ? C.green : rr >= 1 ? C.amber : C.red;
   const fmtPnL = (v) => v === Infinity ? '∞' : `$${Math.abs(v).toFixed(0)}`;
 
+  // Margin & scenario fields
+  const margin = row.estimatedMargin || 0;
+  const rom = row.returnOnMargin || 0;
+  const romColor = rom >= 1.5 ? C.green : rom >= 1 ? C.amber : C.red;
+  const hasScenario = row.scenarioPnL != null;
+  const scenPnL = row.scenarioPnL || 0;
+
   const greeks = {
     Delta: (row.delta || 0).toFixed(3),
     Gamma: (row.gamma || (0.031 + Math.abs(row.delta || 0) * 0.015)).toFixed(4),
@@ -380,6 +387,28 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
               <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.blue }}>{row.pop}%</span>
             </div>
           )}
+          {/* Margin */}
+          {margin > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.cyan} strokeWidth="3" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /></svg>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Margin</span>
+              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.cyan }}>${margin.toLocaleString()}</span>
+            </div>
+          )}
+          {/* ROM */}
+          {rom > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>ROM</span>
+              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: romColor }}>{rom >= 999 ? '∞' : rom.toFixed(2) + 'x'}</span>
+            </div>
+          )}
+          {/* Scenario P&L */}
+          {hasScenario && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Scen</span>
+              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: scenPnL >= 0 ? C.green : C.red }}>{scenPnL >= 0 ? '+' : ''}${scenPnL.toFixed(2)}</span>
+            </div>
+          )}
           {/* DTE */}
           {row.dte > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
@@ -429,6 +458,39 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
               ${(row.bid || 0).toFixed(2)} <span style={{ color: C.muted }}>/ </span>${(row.ask || 0).toFixed(2)}
             </span>
           </div>
+
+          {/* Margin & Capital section */}
+          {margin > 0 && (
+            <div style={{
+              background: C.surfaceHi, borderRadius: 10, padding: "10px 12px", marginBottom: 14,
+              border: `1px solid ${C.border}`,
+            }}>
+              <div style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 8 }}>MARGIN & CAPITAL</div>
+              {[
+                { label: "Est. Initial Margin", value: `$${margin.toLocaleString()}`, color: C.cyan },
+                { label: "Return on Margin", value: rom >= 999 ? '∞' : `${rom.toFixed(2)}x`, color: romColor },
+                ...(hasScenario ? [
+                  { label: `Scenario P&L (@$${(row.targetPrice || 0).toFixed(0)})`, value: `${scenPnL >= 0 ? '+' : ''}$${scenPnL.toFixed(2)}`, color: scenPnL >= 0 ? C.green : C.red },
+                  { label: "Scenario Score", value: `${row.scenarioScore || 0}`, color: (row.scenarioScore || 0) >= 65 ? C.green : (row.scenarioScore || 0) >= 45 ? C.amber : C.red },
+                ] : []),
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                  <span style={{ fontSize: 11, color: C.sub }}>{label}</span>
+                  <span style={{ fontFamily: "monospace", fontSize: 11, color, fontWeight: 700 }}>{value}</span>
+                </div>
+              ))}
+              {/* Capital efficiency bar */}
+              <div style={{ marginTop: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Capital Efficiency</span>
+                  <span style={{ fontFamily: "monospace", fontSize: 9, fontWeight: 700, color: romColor }}>{Math.min(100, Math.round(rom * 50))}%</span>
+                </div>
+                <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, Math.round(rom * 50))}%`, background: romColor, borderRadius: 2, transition: "width 0.6s ease" }} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 2×2 data grid — Greeks left, Price right */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr", background: C.surfaceHi, borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
@@ -531,16 +593,144 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
   );
 }
 
+// ─── SCENARIO PANEL ───────────────────────────────────────────────────────────
+const DIRECTIONS = [
+  { key: "bullish", label: "Bullish", icon: "▲", color: C.green, bg: C.greenBg, border: C.greenBorder },
+  { key: "bearish", label: "Bearish", icon: "▼", color: C.red, bg: C.redBg, border: C.redBorder },
+  { key: "neutral", label: "Neutral", icon: "◆", color: C.purple, bg: C.purpleBg, border: "rgba(139,92,246,0.30)" },
+];
+const TIMEFRAMES = [
+  { days: 7, label: "1 Week" },
+  { days: 14, label: "2 Weeks" },
+  { days: 30, label: "30 Days" },
+  { days: 45, label: "45 Days" },
+  { days: 60, label: "60 Days" },
+];
+const CONFIDENCES = [
+  { key: "low", label: "Low" },
+  { key: "medium", label: "Medium" },
+  { key: "high", label: "High" },
+];
+
+function ScenarioPanel({ scenario, setScenario, isActive }) {
+  const dirColor = DIRECTIONS.find(d => d.key === scenario.direction);
+
+  return (
+    <div style={{
+      background: C.surfaceHi,
+      border: `1px solid ${isActive ? (dirColor?.border || C.borderHi) : C.border}`,
+      borderRadius: 14,
+      padding: "14px 14px 16px",
+      animation: "fadeUp 0.22s ease",
+      transition: "border-color 0.2s",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.cyan} strokeWidth="2.5" strokeLinecap="round">
+            <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+          </svg>
+          <span style={{ fontSize: 11, fontWeight: 700, color: C.text, letterSpacing: 0.3 }}>Expected Scenario</span>
+          {isActive && <span style={{ fontSize: 8, fontWeight: 800, color: C.cyan, background: "rgba(6,182,212,0.12)", padding: "2px 6px", borderRadius: 4, letterSpacing: 1 }}>ACTIVE</span>}
+        </div>
+        {isActive && (
+          <button
+            onClick={() => setScenario({ direction: null, magnitude: 3, timeframeDays: 14, confidence: "medium" })}
+            style={{ fontSize: 9, color: C.muted, background: "none", border: "none", cursor: "pointer", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 2 }}
+          >Clear</button>
+        )}
+      </div>
+
+      {/* Direction */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 7 }}>DIRECTION</div>
+        <div style={{ display: "flex", gap: 7 }}>
+          {DIRECTIONS.map(d => (
+            <button key={d.key} onClick={() => setScenario(s => ({ ...s, direction: s.direction === d.key ? null : d.key }))}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                background: scenario.direction === d.key ? d.bg : "transparent",
+                color: scenario.direction === d.key ? d.color : C.muted,
+                border: `1.5px solid ${scenario.direction === d.key ? d.border : C.border}`,
+                transition: "all 0.15s",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+              }}>
+              <span style={{ fontSize: 10 }}>{d.icon}</span>{d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Magnitude */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+          <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }}>EXPECTED MOVE</span>
+          <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 800, color: dirColor?.color || C.text }}>{scenario.magnitude}%</span>
+        </div>
+        <input type="range" min="0.5" max="30" step="0.5" value={scenario.magnitude}
+          onChange={e => setScenario(s => ({ ...s, magnitude: parseFloat(e.target.value) }))}
+          style={{
+            width: "100%", height: 4, appearance: "none", background: C.surfaceHi2,
+            borderRadius: 2, outline: "none", cursor: "pointer",
+            accentColor: dirColor?.color || C.blue,
+          }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+          <span style={{ fontSize: 8, color: C.muted }}>0.5%</span>
+          <span style={{ fontSize: 8, color: C.muted }}>30%</span>
+        </div>
+      </div>
+
+      {/* Timeframe */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 7 }}>TIMEFRAME</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {TIMEFRAMES.map(tf => (
+            <button key={tf.days} onClick={() => setScenario(s => ({ ...s, timeframeDays: tf.days }))}
+              style={{
+                padding: "5px 10px", borderRadius: 8, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                background: scenario.timeframeDays === tf.days ? C.surfaceHi2 : "transparent",
+                color: scenario.timeframeDays === tf.days ? C.text : C.muted,
+                border: `1px solid ${scenario.timeframeDays === tf.days ? C.borderHi : C.border}`,
+                transition: "all 0.15s",
+              }}>{tf.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Confidence */}
+      <div>
+        <div style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 7 }}>CONFIDENCE</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {CONFIDENCES.map(c => (
+            <button key={c.key} onClick={() => setScenario(s => ({ ...s, confidence: c.key }))}
+              style={{
+                flex: 1, padding: "5px 0", borderRadius: 8, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                background: scenario.confidence === c.key ? C.surfaceHi2 : "transparent",
+                color: scenario.confidence === c.key ? C.text : C.muted,
+                border: `1px solid ${scenario.confidence === c.key ? C.borderHi : C.border}`,
+                transition: "all 0.15s",
+              }}>{c.label}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── FILTER / SORT MODAL ──────────────────────────────────────────────────────
 const STRATEGIES = ["All", "Single Option", "Call Spread", "Put Spread", "Iron Condor", "Straddle", "Bear Call Spread"];
 const SORT_OPTIONS = [
   { key: "score", label: "Score" },
   { key: "riskReward", label: "R:R Ratio" },
+  { key: "estimatedMargin", label: "Margin" },
+  { key: "returnOnMargin", label: "ROM" },
   { key: "symbol", label: "Symbol" },
   { key: "underlying", label: "Last Price" },
   { key: "delta", label: "Delta" },
   { key: "change", label: "% Change" },
   { key: "iv", label: "IV" },
+  { key: "scenarioPnL", label: "Scenario P&L" },
 ];
 
 function FilterModal({ open, onClose, strategy, setStrategy, sortKey, setSortKey, sortDir, setSortDir, filters, setFilters }) {
@@ -661,6 +851,9 @@ export default function OptionChamber() {
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState({ minVolume: "1M", minMarketCap: "10B", ivRange: "10-70%" });
   const [chipFilter, setChipFilter] = useState(null); // "bull" | "bear" | "highScore" | "topMove" | null
+  const [showScenario, setShowScenario] = useState(false);
+  const [scenario, setScenario] = useState({ direction: null, magnitude: 3, timeframeDays: 14, confidence: "medium" });
+  const scenarioActive = scenario.direction != null;
 
   const handleReset = () => {
     setSearch("");
@@ -673,6 +866,8 @@ export default function OptionChamber() {
     setSortDir("desc");
     setFilters({ minVolume: "1M", minMarketCap: "10B", ivRange: "10-70%" });
     setChipFilter(null);
+    setShowScenario(false);
+    setScenario({ direction: null, magnitude: 3, timeframeDays: 14, confidence: "medium" });
   };
 
   const handleRun = async () => {
@@ -680,8 +875,14 @@ export default function OptionChamber() {
     try {
       let data;
       const ticker = search.trim().toUpperCase();
-      if (ticker) { data = await api.scanSingle(ticker); }
-      else { data = await api.scanMarketWide({ minVolume: parseFilterValue(filters.minVolume), minMarketCap: parseFilterValue(filters.minMarketCap) }); }
+      const scenarioPayload = scenarioActive ? {
+        direction: scenario.direction,
+        magnitude: scenario.magnitude / 100, // convert % to decimal
+        timeframeDays: scenario.timeframeDays,
+        confidence: scenario.confidence,
+      } : null;
+      if (ticker) { data = await api.scanSingle(ticker, scenarioPayload); }
+      else { data = await api.scanMarketWide({ minVolume: parseFilterValue(filters.minVolume), minMarketCap: parseFilterValue(filters.minMarketCap) }, scenarioPayload); }
       const quote = data.quote || {};
       const strategies = (data.strategies || []).map(s => ({ ...s, _quote: quote }));
       setResults(strategies); setRan(true);
@@ -853,10 +1054,25 @@ export default function OptionChamber() {
               {isDesktop && "Filter & Sort"}
             </button>
 
+            {/* Scenario toggle */}
+            <button onClick={() => setShowScenario(s => !s)} style={{
+              background: scenarioActive ? "rgba(6,182,212,0.12)" : C.surfaceHi,
+              border: `1px solid ${scenarioActive ? "rgba(6,182,212,0.35)" : showScenario ? C.borderHi : C.border}`,
+              borderRadius: 10, padding: "0 12px", height: 38, cursor: "pointer",
+              color: scenarioActive ? C.cyan : C.sub,
+              display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, flexShrink: 0,
+              transition: "all 0.15s",
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
+              </svg>
+              {!isDesktop ? (scenarioActive ? "✓" : "") : (scenarioActive ? "Scenario ✓" : "Scenario")}
+            </button>
+
             {/* Run button */}
             <button onClick={handleRun} disabled={running} style={{
-              background: running ? "rgba(30,30,34,0.7)" : "rgba(59,130,246,0.85)",
-              border: `1px solid ${running ? C.border : "rgba(59,130,246,0.5)"}`,
+              background: running ? "rgba(30,30,34,0.7)" : scenarioActive ? "rgba(6,182,212,0.85)" : "rgba(59,130,246,0.85)",
+              border: `1px solid ${running ? C.border : scenarioActive ? "rgba(6,182,212,0.5)" : "rgba(59,130,246,0.5)"}`,
               borderRadius: 10, padding: "0 18px", height: 38,
               color: running ? C.sub : "#fff", fontWeight: 700, fontSize: 11, letterSpacing: 1,
               cursor: running ? "default" : "pointer", transition: "all 0.18s",
@@ -866,11 +1082,18 @@ export default function OptionChamber() {
                 ? <><span style={{ width: 10, height: 10, border: `1.5px solid ${C.muted}`, borderTopColor: C.text, borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />SCANNING…</>
                 : <>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                  RUN SCREENER
+                  {scenarioActive ? "RUN SCENARIO" : "RUN SCREENER"}
                 </>
               }
             </button>
           </div>
+
+          {/* Scenario Panel */}
+          {showScenario && (
+            <div style={{ marginBottom: 14, animation: "fadeUp 0.18s ease" }}>
+              <ScenarioPanel scenario={scenario} setScenario={setScenario} isActive={scenarioActive} />
+            </div>
+          )}
 
           {/* Active filter chips */}
           {ran && (
