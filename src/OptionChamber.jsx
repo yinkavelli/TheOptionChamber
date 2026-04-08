@@ -4,27 +4,27 @@ import { api } from "./api.js";
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
 const C = {
-  bg: "#0d0d10",
-  surface: "#16161a",
-  surfaceHi: "#1e1e24",
-  surfaceHi2: "#26262e",
-  border: "rgba(255,255,255,0.08)",
-  borderHi: "rgba(255,255,255,0.16)",
-  text: "#f0f0f5",
-  sub: "#9898a6",
-  muted: "#5a5a6a",
-  green: "#2ecc71",
-  greenBg: "rgba(46,204,113,0.12)",
-  greenBorder: "rgba(46,204,113,0.25)",
-  red: "#e74c3c",
-  redBg: "rgba(231,76,60,0.12)",
-  redBorder: "rgba(231,76,60,0.25)",
-  amber: "#f39c12",
+  bg: "#050506",
+  surface: "#0c0c0e",
+  surfaceHi: "#111114",
+  surfaceHi2: "#18181c",
+  border: "rgba(255,255,255,0.06)",
+  borderHi: "rgba(255,255,255,0.12)",
+  text: "#e8e8ed",
+  sub: "#8a8a9a",
+  muted: "#4a4a58",
+  green: "#10B981",
+  greenBg: "rgba(16,185,129,0.10)",
+  greenBorder: "rgba(16,185,129,0.22)",
+  red: "#ef4444",
+  redBg: "rgba(239,68,68,0.10)",
+  redBorder: "rgba(239,68,68,0.22)",
+  amber: "#f59e0b",
   blue: "#3b82f6",
-  blueBg: "rgba(59,130,246,0.12)",
-  blueBorder: "rgba(59,130,246,0.30)",
+  blueBg: "rgba(59,130,246,0.10)",
+  blueBorder: "rgba(59,130,246,0.22)",
   purple: "#8b5cf6",
-  purpleBg: "rgba(139,92,246,0.12)",
+  purpleBg: "rgba(139,92,246,0.10)",
   cyan: "#06b6d4",
 };
 
@@ -91,7 +91,7 @@ function FilterPill({ label, value, color, bg, border, active, onClick }) {
       minWidth: 0,
     }}>
       <span style={{ fontSize: 8, letterSpacing: 1, color, fontWeight: 700, whiteSpace: "nowrap" }}>{label}</span>
-      <span style={{ fontSize: 13, fontFamily: "monospace", fontWeight: 800, color, letterSpacing: -0.3, whiteSpace: "nowrap" }}>{value}</span>
+      <span style={{ fontSize: 13, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 800, color, letterSpacing: -0.3, whiteSpace: "nowrap" }}>{value}</span>
     </button>
   );
 }
@@ -105,7 +105,7 @@ function ScoreRing({ score }) {
       <circle cx={20} cy={20} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={3} />
       <circle cx={20} cy={20} r={r} fill="none" stroke={color} strokeWidth={3}
         strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={circ / 4} strokeLinecap="round" />
-      <text x={20} y={24} textAnchor="middle" style={{ fontFamily: "monospace", fontSize: 9, fill: color, fontWeight: 800 }}>{score}</text>
+      <text x={20} y={24} textAnchor="middle" style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, fill: color, fontWeight: 800 }}>{score}</text>
     </svg>
   );
 }
@@ -120,7 +120,7 @@ function DeltaRing({ delta }) {
       <circle cx={14} cy={14} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={2} />
       <circle cx={14} cy={14} r={r} fill="none" stroke={color} strokeWidth={2}
         strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={circ / 4} strokeLinecap="round" />
-      <text x={14} y={18} textAnchor="middle" style={{ fontFamily: "monospace", fontSize: 7, fill: color, fontWeight: 700 }}>{d.toFixed(2)}</text>
+      <text x={14} y={18} textAnchor="middle" style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 7, fill: color, fontWeight: 700 }}>{d.toFixed(2)}</text>
     </svg>
   );
 }
@@ -167,7 +167,7 @@ function InteractivePayoff({ row }) {
         <span style={{ fontSize: 11.5, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: C.red, display: "inline-block" }} />{`Max loss $${Math.abs(minPnl).toFixed(2)}`}</span>
         {breakevens.map((be, i) => <span key={i} style={{ fontSize: 11.5, fontWeight: 700, color: C.text, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: C.amber, display: "inline-block" }} />BE ${be.toFixed(2)}</span>)}
       </div>
-      {cursor && <div style={{ position: "absolute", top: 40, left: "50%", transform: "translateX(-50%)", background: "rgba(22,22,26,0.95)", border: `1px solid ${C.borderHi}`, borderRadius: 8, padding: "4px 12px", display: "flex", gap: 12, fontSize: 10, fontFamily: "monospace", pointerEvents: "none", zIndex: 10, whiteSpace: "nowrap" }}>
+      {cursor && <div style={{ position: "absolute", top: 40, left: "50%", transform: "translateX(-50%)", background: "rgba(22,22,26,0.95)", border: `1px solid ${C.borderHi}`, borderRadius: 8, padding: "4px 12px", display: "flex", gap: 12, fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", pointerEvents: "none", zIndex: 10, whiteSpace: "nowrap" }}>
         <span style={{ color: C.sub }}>Price <span style={{ color: C.text, fontWeight: 700 }}>${cursor.price.toFixed(2)}</span></span>
         <span style={{ color: cursor.pnl >= 0 ? C.green : C.red, fontWeight: 700 }}>P&L {cursor.pnl >= 0 ? "+" : ""}{cursor.pnl.toFixed(2)}</span>
       </div>}
@@ -330,7 +330,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
 
           {/* Symbol + strategy */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: 0.3, marginBottom: 3 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: 0.3, marginBottom: 3 }}>
               {row.symbol}
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
@@ -345,7 +345,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
 
           {/* Right: price stack */}
           <div style={{ textAlign: "right", flexShrink: 0, minWidth: 72 }}>
-            <div style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>${(row.underlying || 0).toFixed(2)}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 700, color: C.text, whiteSpace: "nowrap" }}>${(row.underlying || 0).toFixed(2)}</div>
             <div style={{ fontSize: 10, fontWeight: 600, color: pos ? C.green : C.red, whiteSpace: "nowrap" }}>{pos ? "▲" : "▼"}{Math.abs(row.change || 0).toFixed(2)}%</div>
           </div>
 
@@ -365,26 +365,26 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.green, flexShrink: 0 }} />
             <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Profit</span>
-            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.green }}>{fmtPnL(maxProfit)}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.green }}>{fmtPnL(maxProfit)}</span>
           </div>
           {/* Max Loss */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.red, flexShrink: 0 }} />
             <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Risk</span>
-            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.red }}>{fmtPnL(maxRisk)}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.red }}>{fmtPnL(maxRisk)}</span>
           </div>
           {/* R:R Ratio */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={rrColor} strokeWidth="3" strokeLinecap="round"><path d="M4 14l8-8 8 8" /></svg>
             <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>R:R</span>
-            <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: rrColor }}>{rr >= 999 ? '∞' : rr.toFixed(2) + 'x'}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: rrColor }}>{rr >= 999 ? '∞' : rr.toFixed(2) + 'x'}</span>
           </div>
           {/* POP */}
           {row.pop > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="3" strokeLinecap="round"><circle cx="12" cy="12" r="8" /></svg>
               <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>POP</span>
-              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.blue }}>{row.pop}%</span>
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.blue }}>{row.pop}%</span>
             </div>
           )}
           {/* Margin */}
@@ -392,28 +392,28 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.cyan} strokeWidth="3" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /></svg>
               <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Margin</span>
-              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.cyan }}>${margin.toLocaleString()}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.cyan }}>${margin.toLocaleString()}</span>
             </div>
           )}
           {/* ROM */}
           {rom > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>ROM</span>
-              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: romColor }}>{rom >= 999 ? '∞' : rom.toFixed(2) + 'x'}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: romColor }}>{rom >= 999 ? '∞' : rom.toFixed(2) + 'x'}</span>
             </div>
           )}
           {/* Scenario P&L */}
           {hasScenario && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Scen</span>
-              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: scenPnL >= 0 ? C.green : C.red }}>{scenPnL >= 0 ? '+' : ''}${scenPnL.toFixed(2)}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: scenPnL >= 0 ? C.green : C.red }}>{scenPnL >= 0 ? '+' : ''}${scenPnL.toFixed(2)}</span>
             </div>
           )}
           {/* DTE */}
           {row.dte > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
               <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>DTE</span>
-              <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 700, color: C.sub }}>{row.dte}d</span>
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.sub }}>{row.dte}d</span>
             </div>
           )}
         </div>
@@ -436,10 +436,10 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
                     fontSize: 8, fontWeight: 800, color: leg.signal === "BUY" ? C.green : C.red,
                     background: leg.signal === "BUY" ? C.greenBg : C.redBg, padding: "2px 5px", borderRadius: 4
                   }}>{leg.signal}</span>
-                  <span style={{ fontFamily: "monospace", fontSize: 10, color: C.sub }}>{leg.type === "C" ? "Call" : "Put"} {Number(leg.strike).toFixed(0)}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.sub }}>{leg.type === "C" ? "Call" : "Put"} {Number(leg.strike).toFixed(0)}</span>
                   <span style={{ fontSize: 9, color: C.muted }}>{leg.expiry}</span>
                 </div>
-                <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, color: C.text }}>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, fontWeight: 600, color: C.text }}>
                   <span style={{ color: C.green }}>${(leg.bid || 0).toFixed(2)}</span>
                   <span style={{ color: C.muted }}> / </span>
                   <span style={{ color: C.red }}>${(leg.ask || 0).toFixed(2)}</span>
@@ -454,7 +454,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
             padding: "7px 10px", background: C.surfaceHi2, borderRadius: 8, marginBottom: 14
           }}>
             <span style={{ fontSize: 9, letterSpacing: 1, fontWeight: 700, color: C.muted }}>NET PREMIUM</span>
-            <span style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: C.text }}>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700, color: C.text }}>
               ${(row.bid || 0).toFixed(2)} <span style={{ color: C.muted }}>/ </span>${(row.ask || 0).toFixed(2)}
             </span>
           </div>
@@ -476,14 +476,14 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <span style={{ fontSize: 11, color: C.sub }}>{label}</span>
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color, fontWeight: 700 }}>{value}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color, fontWeight: 700 }}>{value}</span>
                 </div>
               ))}
               {/* Capital efficiency bar */}
               <div style={{ marginTop: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Capital Efficiency</span>
-                  <span style={{ fontFamily: "monospace", fontSize: 9, fontWeight: 700, color: romColor }}>{Math.min(100, Math.round(rom * 50))}%</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, fontWeight: 700, color: romColor }}>{Math.min(100, Math.round(rom * 50))}%</span>
                 </div>
                 <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${Math.min(100, Math.round(rom * 50))}%`, background: romColor, borderRadius: 2, transition: "width 0.6s ease" }} />
@@ -499,7 +499,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
               {Object.entries(greeks).map(([k, v]) => (
                 <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <span style={{ fontSize: 11, color: C.sub }}>{k}</span>
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color: C.text, fontWeight: 600 }}>{v}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.text, fontWeight: 600 }}>{v}</span>
                 </div>
               ))}
             </div>
@@ -516,7 +516,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
               ].map(({ label, value }) => (
                 <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <span style={{ fontSize: 11, color: C.sub }}>{label}</span>
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color: C.text, fontWeight: 600 }}>{value}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.text, fontWeight: 600 }}>{value}</span>
                 </div>
               ))}
             </div>
@@ -526,7 +526,7 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
               <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }}>PROBABILITY SCORE</span>
-              <span style={{ fontSize: 11, fontFamily: "monospace", fontWeight: 700, color: scoreColor }}>{score}%</span>
+              <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, color: scoreColor }}>{score}%</span>
             </div>
             <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${score}%`, background: scoreColor, borderRadius: 2, transition: "width 0.8s ease" }} />
@@ -665,7 +665,7 @@ function ScenarioPanel({ scenario, setScenario, isActive }) {
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
           <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }}>EXPECTED MOVE</span>
-          <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 800, color: dirColor?.color || C.text }}>{scenario.magnitude}%</span>
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, fontWeight: 800, color: dirColor?.color || C.text }}>{scenario.magnitude}%</span>
         </div>
         <input type="range" min="0.5" max="30" step="0.5" value={scenario.magnitude}
           onChange={e => setScenario(s => ({ ...s, magnitude: parseFloat(e.target.value) }))}
@@ -737,12 +737,12 @@ function FilterModal({ open, onClose, strategy, setStrategy, sortKey, setSortKey
   if (!open) return null;
   const inputStyle = {
     width: "100%", background: C.surfaceHi2, border: `1px solid ${C.border}`,
-    borderRadius: 8, padding: "7px 10px", fontSize: 12, color: C.text, fontFamily: "monospace",
+    borderRadius: 8, padding: "7px 10px", fontSize: 12, color: C.text, fontFamily: "'IBM Plex Mono',monospace",
   };
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(10px)", display: "flex", alignItems: "flex-end", justifyContent: "center", animation: "fadeIn 0.18s ease" }}>
       <div onClick={e => e.stopPropagation()} style={{
-        width: "100%", maxWidth: 480, background: "#13131a",
+        width: "100%", maxWidth: 480, background: "#0a0a0c",
         border: `1px solid ${C.borderHi}`, borderBottom: "none",
         borderRadius: "20px 20px 0 0", padding: "0 20px 40px",
         maxHeight: "88dvh", overflowY: "auto", animation: "slideUp 0.28s cubic-bezier(0.32,0.72,0,1)",
@@ -827,8 +827,8 @@ function FilterModal({ open, onClose, strategy, setStrategy, sortKey, setSortKey
         </div>
 
         <button onClick={onClose} style={{
-          width: "100%", padding: "13px", borderRadius: 14,
-          background: C.blue, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", letterSpacing: 0.5,
+          width: "100%", padding: "11px", borderRadius: 10,
+          background: C.green, border: "none", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", letterSpacing: 0.3,
         }}>Apply</button>
       </div>
     </div>
@@ -912,7 +912,8 @@ export default function OptionChamber() {
   return (
     <>
       <style>{`
-        @keyframes fadeUp  { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap');
+        @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
         @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
         @keyframes spin    { to{transform:rotate(360deg)} }
@@ -920,28 +921,31 @@ export default function OptionChamber() {
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { display:none; }
         input,select { outline:none; }
-        input::placeholder { color:#5a5a6a; }
-        option { background:#16161a; color:#f0f0f5; }
+        input::placeholder { color:#4a4a58; }
+        option { background:#0c0c0e; color:#e8e8ed; }
         button { font-family:inherit; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#10B981; cursor:pointer; border:2px solid #050506; }
+        input[type=range]::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:#10B981; cursor:pointer; border:2px solid #050506; }
       `}</style>
 
       <div style={{
         minHeight: "100dvh", background: C.bg, color: C.text,
-        fontFamily: "-apple-system,'SF Pro Display','Helvetica Neue',Arial,sans-serif",
+        fontFamily: "'IBM Plex Sans',-apple-system,'Helvetica Neue',Arial,sans-serif",
         maxWidth: isDesktop ? 1100 : 448, margin: "0 auto",
         display: "flex", flexDirection: "column",
+        fontSize: 13, letterSpacing: "-0.01em",
       }}>
 
         {/* ── HEADER ── */}
         <header style={{
-          padding: isDesktop ? "32px 28px 0" : "52px 16px 0",
-          background: "rgba(13,13,16,0.94)",
-          backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)",
+          padding: isDesktop ? "14px 24px 0" : "40px 14px 0",
+          background: "rgba(5,5,6,0.92)",
+          backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
           position: "sticky", top: 0, zIndex: 20,
           borderBottom: `1px solid ${C.border}`,
         }}>
           {/* Title row */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: ran && results.length > 0 ? 10 : 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: ran && results.length > 0 ? 8 : 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {/* Home / Reset button — visible once a scan has been run */}
               {ran && (
@@ -949,10 +953,10 @@ export default function OptionChamber() {
                   onClick={handleReset}
                   title="Back to home"
                   style={{
-                    background: "rgba(255,255,255,0.05)",
+                    background: "rgba(255,255,255,0.04)",
                     border: `1px solid ${C.border}`,
-                    borderRadius: 10,
-                    width: 34, height: 34,
+                    borderRadius: 8,
+                    width: 28, height: 28,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     cursor: "pointer", flexShrink: 0,
                     transition: "background 0.15s, border-color 0.15s",
@@ -969,32 +973,31 @@ export default function OptionChamber() {
               <div>
                 <h1
                   onClick={handleReset}
-                  style={{ fontSize: isDesktop ? 28 : 24, fontWeight: 800, letterSpacing: -0.8, lineHeight: 1, cursor: "pointer", userSelect: "none" }}
+                  style={{ fontSize: isDesktop ? 18 : 16, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1, cursor: "pointer", userSelect: "none" }}
                   title="Reset to home"
                 >
                   <span style={{ color: C.text }}>Option</span><span style={{ color: C.muted }}> Chamber</span>
                 </h1>
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4, fontWeight: 500 }}>{TODAY}</div>
               </div>
             </div>
             {/* Desktop pills — inline right of title */}
             {isDesktop && ran && results.length > 0 && (
-              <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 5, alignItems: "center", flexShrink: 0 }}>
                 <FilterPill label="BULL" value={bullishCount}
-                  color={C.green} bg="rgba(46,204,113,0.15)" border="rgba(46,204,113,0.30)"
+                  color={C.green} bg={C.greenBg} border={C.greenBorder}
                   active={chipFilter === "bull"} onClick={() => setChipFilter(f => f === "bull" ? null : "bull")} />
                 <FilterPill label="BEAR" value={bearishCount}
-                  color={C.red} bg="rgba(231,76,60,0.15)" border="rgba(231,76,60,0.30)"
+                  color={C.red} bg={C.redBg} border={C.redBorder}
                   active={chipFilter === "bear"} onClick={() => setChipFilter(f => f === "bear" ? null : "bear")} />
                 {avgScore != null && <FilterPill label="AVG" value={`${avgScore}%`}
                   color={avgScore >= 65 ? C.green : C.amber}
-                  bg={avgScore >= 65 ? "rgba(46,204,113,0.15)" : "rgba(255,214,10,0.15)"}
-                  border={avgScore >= 65 ? "rgba(46,204,113,0.30)" : "rgba(255,214,10,0.30)"}
+                  bg={avgScore >= 65 ? C.greenBg : "rgba(245,158,11,0.10)"}
+                  border={avgScore >= 65 ? C.greenBorder : "rgba(245,158,11,0.22)"}
                   active={chipFilter === "highScore"} onClick={() => setChipFilter(f => f === "highScore" ? null : "highScore")} />}
                 {topMover && <FilterPill label="TOP" value={`${(topMover.change || 0) > 0 ? "+" : ""}${(topMover.change || 0).toFixed(1)}%`}
                   color={(topMover.change || 0) > 0 ? C.green : C.red}
-                  bg={(topMover.change || 0) > 0 ? "rgba(46,204,113,0.15)" : "rgba(231,76,60,0.15)"}
-                  border={(topMover.change || 0) > 0 ? "rgba(46,204,113,0.30)" : "rgba(231,76,60,0.30)"}
+                  bg={(topMover.change || 0) > 0 ? C.greenBg : C.redBg}
+                  border={(topMover.change || 0) > 0 ? C.greenBorder : C.redBorder}
                   active={chipFilter === "topMove"} onClick={() => setChipFilter(f => f === "topMove" ? null : "topMove")} />}
               </div>
             )}
@@ -1002,49 +1005,49 @@ export default function OptionChamber() {
 
           {/* Mobile pills — 4-column grid beneath title, always fully visible */}
           {!isDesktop && ran && results.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 5, marginBottom: 10 }}>
               <FilterPill label="BULL" value={bullishCount}
-                color={C.green} bg="rgba(46,204,113,0.15)" border="rgba(46,204,113,0.35)"
+                color={C.green} bg={C.greenBg} border={C.greenBorder}
                 active={chipFilter === "bull"} onClick={() => setChipFilter(f => f === "bull" ? null : "bull")} />
               <FilterPill label="BEAR" value={bearishCount}
-                color={C.red} bg="rgba(231,76,60,0.15)" border="rgba(231,76,60,0.35)"
+                color={C.red} bg={C.redBg} border={C.redBorder}
                 active={chipFilter === "bear"} onClick={() => setChipFilter(f => f === "bear" ? null : "bear")} />
               <FilterPill label="AVG" value={avgScore != null ? `${avgScore}%` : "—"}
                 color={avgScore != null && avgScore >= 65 ? C.green : C.amber}
-                bg={avgScore != null && avgScore >= 65 ? "rgba(46,204,113,0.15)" : "rgba(255,214,10,0.15)"}
-                border={avgScore != null && avgScore >= 65 ? "rgba(46,204,113,0.35)" : "rgba(255,214,10,0.35)"}
+                bg={avgScore != null && avgScore >= 65 ? C.greenBg : "rgba(245,158,11,0.10)"}
+                border={avgScore != null && avgScore >= 65 ? C.greenBorder : "rgba(245,158,11,0.22)"}
                 active={chipFilter === "highScore"} onClick={() => setChipFilter(f => f === "highScore" ? null : "highScore")} />
               <FilterPill label="TOP" value={topMover ? `${(topMover.change || 0) > 0 ? "+" : ""}${(topMover.change || 0).toFixed(1)}%` : "—"}
                 color={topMover && (topMover.change || 0) > 0 ? C.green : C.red}
-                bg={topMover && (topMover.change || 0) > 0 ? "rgba(46,204,113,0.15)" : "rgba(231,76,60,0.15)"}
-                border={topMover && (topMover.change || 0) > 0 ? "rgba(46,204,113,0.35)" : "rgba(231,76,60,0.35)"}
+                bg={topMover && (topMover.change || 0) > 0 ? C.greenBg : C.redBg}
+                border={topMover && (topMover.change || 0) > 0 ? C.greenBorder : C.redBorder}
                 active={chipFilter === "topMove"} onClick={() => setChipFilter(f => f === "topMove" ? null : "topMove")} />
             </div>
           )}
 
           {/* Search + action row */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 10, alignItems: "center" }}>
             {/* Search input */}
             <div style={{ flex: 1, position: "relative" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round"
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" strokeLinecap="round"
                 style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
                 <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
               </svg>
-              <input type="text" placeholder="Enter ticker (or leave blank for market scan)"
+              <input type="text" placeholder="Ticker or blank for market scan"
                 value={search} onChange={e => setSearch(e.target.value.toUpperCase())}
                 style={{
                   width: "100%", background: C.surfaceHi, border: `1px solid ${C.border}`,
-                  borderRadius: 10, padding: "9px 10px 9px 30px",
-                  fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: C.text,
+                  borderRadius: 8, padding: "8px 10px 8px 30px",
+                  fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 500, color: C.text,
                 }}
               />
             </div>
 
             {/* Filter button */}
             <button onClick={() => setShowFilter(true)} style={{
-              background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 10,
-              padding: "0 14px", height: 38, cursor: "pointer", color: C.sub,
-              display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, flexShrink: 0,
+              background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8,
+              padding: "0 12px", height: 34, cursor: "pointer", color: C.sub,
+              display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, flexShrink: 0,
               transition: "border-color 0.15s",
             }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -1056,14 +1059,14 @@ export default function OptionChamber() {
 
             {/* Scenario toggle */}
             <button onClick={() => setShowScenario(s => !s)} style={{
-              background: scenarioActive ? "rgba(6,182,212,0.12)" : C.surfaceHi,
-              border: `1px solid ${scenarioActive ? "rgba(6,182,212,0.35)" : showScenario ? C.borderHi : C.border}`,
-              borderRadius: 10, padding: "0 12px", height: 38, cursor: "pointer",
+              background: scenarioActive ? "rgba(6,182,212,0.10)" : C.surfaceHi,
+              border: `1px solid ${scenarioActive ? "rgba(6,182,212,0.25)" : showScenario ? C.borderHi : C.border}`,
+              borderRadius: 8, padding: "0 10px", height: 34, cursor: "pointer",
               color: scenarioActive ? C.cyan : C.sub,
               display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, flexShrink: 0,
               transition: "all 0.15s",
             }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" />
               </svg>
               {!isDesktop ? (scenarioActive ? "✓" : "") : (scenarioActive ? "Scenario ✓" : "Scenario")}
@@ -1071,18 +1074,18 @@ export default function OptionChamber() {
 
             {/* Run button */}
             <button onClick={handleRun} disabled={running} style={{
-              background: running ? "rgba(30,30,34,0.7)" : scenarioActive ? "rgba(6,182,212,0.85)" : "rgba(59,130,246,0.85)",
-              border: `1px solid ${running ? C.border : scenarioActive ? "rgba(6,182,212,0.5)" : "rgba(59,130,246,0.5)"}`,
-              borderRadius: 10, padding: "0 18px", height: 38,
-              color: running ? C.sub : "#fff", fontWeight: 700, fontSize: 11, letterSpacing: 1,
+              background: running ? "rgba(18,18,20,0.7)" : scenarioActive ? "rgba(6,182,212,0.85)" : C.green,
+              border: `1px solid ${running ? C.border : scenarioActive ? "rgba(6,182,212,0.4)" : "rgba(16,185,129,0.4)"}`,
+              borderRadius: 8, padding: "0 16px", height: 34,
+              color: running ? C.sub : "#fff", fontWeight: 600, fontSize: 11, letterSpacing: 0.5,
               cursor: running ? "default" : "pointer", transition: "all 0.18s",
-              display: "flex", alignItems: "center", gap: 7, whiteSpace: "nowrap", flexShrink: 0,
+              display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0,
             }}>
               {running
-                ? <><span style={{ width: 10, height: 10, border: `1.5px solid ${C.muted}`, borderTopColor: C.text, borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />SCANNING…</>
+                ? <><span style={{ width: 10, height: 10, border: `1.5px solid ${C.muted}`, borderTopColor: C.text, borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />Scanning…</>
                 : <>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                  {scenarioActive ? "RUN SCENARIO" : "RUN SCREENER"}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                  {scenarioActive ? "Run Scenario" : "Run Screener"}
                 </>
               }
             </button>
@@ -1123,11 +1126,11 @@ export default function OptionChamber() {
           )}
 
           {!ran && !running && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: 52, marginBottom: 18 }}>🏛️</div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>The Option Chamber</h2>
-              <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, maxWidth: 300 }}>
-                Enter a ticker and tap <strong style={{ color: C.text }}>RUN SCREENER</strong> to scan a single stock, or leave blank to scan the full market.
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
+              <div style={{ fontSize: 40, marginBottom: 14 }}>🏛️</div>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8, letterSpacing: -0.3 }}>The Option Chamber</h2>
+              <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, maxWidth: 280 }}>
+                Enter a ticker and tap <strong style={{ color: C.green }}>Run Screener</strong> to scan a single stock, or leave blank to scan the full market.
               </p>
             </div>
           )}
