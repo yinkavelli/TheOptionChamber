@@ -774,9 +774,9 @@ function FilterModal({ open, onClose, strategy, setStrategy, sortKey, setSortKey
             {STRATEGIES.map((s, i) => (
               <button key={i} onClick={() => setStrategy(i)} style={{
                 padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                background: strategy === i ? C.blue : "transparent",
+                background: strategy === i ? C.green : "transparent",
                 color: strategy === i ? "#fff" : C.sub,
-                border: `1px solid ${strategy === i ? C.blue : C.border}`,
+                border: `1px solid ${strategy === i ? C.green : C.border}`,
                 transition: "all 0.15s",
               }}>{s}</button>
             ))}
