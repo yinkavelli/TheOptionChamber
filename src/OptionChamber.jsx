@@ -84,14 +84,14 @@ function FilterPill({ label, value, color, bg, border, active, onClick }) {
       display: "flex", flexDirection: "column", alignItems: "center",
       background: bg,
       border: `1.5px solid ${active ? color : border}`,
-      borderRadius: 8, padding: "5px 9px", cursor: "pointer",
+      borderRadius: 8, padding: "5px 4px", cursor: "pointer",
       transition: "all 0.15s", flexShrink: 0, flexGrow: 1,
       boxShadow: active ? `0 0 12px ${border}` : "none",
       opacity: active ? 1 : 0.72,
       minWidth: 0,
     }}>
-      <span style={{ fontSize: 8, letterSpacing: 1, color, fontWeight: 700, whiteSpace: "nowrap" }}>{label}</span>
-      <span style={{ fontSize: 13, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 800, color, letterSpacing: -0.3, whiteSpace: "nowrap" }}>{value}</span>
+      <span style={{ fontSize: 8, letterSpacing: 0.5, color, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{label}</span>
+      <span style={{ fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 800, color, letterSpacing: -0.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{value}</span>
     </button>
   );
 }
@@ -271,7 +271,7 @@ function getRationale(row) {
 }
 
 // ─── RESULT ACCORDION CARD ────────────────────────────────────────────────────
-function ResultCard({ row, index, isDesktop, onSelect }) {
+function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
   const [expanded, setExpanded] = useState(false);
   const [showPayoff, setShowPayoff] = useState(false);
   const [showNews, setShowNews] = useState(false);
@@ -330,9 +330,11 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
 
           {/* Symbol + strategy */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: 0.3, marginBottom: 3 }}>
-              {row.symbol}
-            </div>
+            {!hideSymbol && (
+              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: 0.3, marginBottom: 3 }}>
+                {row.symbol}
+              </div>
+            )}
             <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
               <span style={{ color: badge.fg }}>{row.strategy}</span>
               <span style={{ color: C.muted }}> · </span>
@@ -587,6 +589,88 @@ function ResultCard({ row, index, isDesktop, onSelect }) {
               <NewsCard symbol={row.symbol} />
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SYMBOL GROUP CARD ────────────────────────────────────────────────────────
+function SymbolGroup({ group, index, isDesktop }) {
+  const [expanded, setExpanded] = useState(false);
+  const rows = group.rows;
+  const quote = group.quote || {};
+  const primaryRow = rows[0];
+  const pos = (primaryRow.change || 0) >= 0;
+  
+  const avgScore = Math.round(rows.reduce((s, r) => s + (r.score || 0), 0) / rows.length);
+  const highestRR = Math.max(...rows.map(r => r.riskReward || 0));
+
+  return (
+    <div style={{
+      marginBottom: expanded ? 20 : 8,
+      animation: `fadeUp 0.3s ease ${index * 0.04}s both`,
+    }}>
+      {/* Group Header */}
+      <div 
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          background: expanded ? C.surfaceHi2 : C.surface,
+          border: `1px solid ${expanded ? C.borderHi : C.border}`,
+          borderRadius: expanded ? 14 : 14,
+          padding: isDesktop ? "14px 20px" : "12px 14px", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          transition: "all 0.2s",
+          boxShadow: expanded ? `0 4px 20px rgba(0,0,0,0.3)` : "none"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: 0.5 }}>
+            {group.symbol}
+          </div>
+          <div style={{ padding: "4px 8px", background: "rgba(255,255,255,0.06)", borderRadius: 6, fontSize: 10, fontWeight: 700, color: C.text, display: "flex", gap: 4, alignItems: "center" }}>
+            <span style={{color: C.green}}>{rows.length}</span> STRATEGIES
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: isDesktop ? 20 : 12 }}>
+          {isDesktop && (
+            <div style={{ display: "flex", gap: 16, marginRight: 8, paddingRight: 16, borderRight: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }}>AVG SCORE</span>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: avgScore >= 65 ? C.green : C.amber, fontWeight: 700 }}>{avgScore}%</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }}>MAX R:R</span>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: highestRR >= 2 ? C.green : C.amber, fontWeight: 700 }}>{highestRR >= 999 ? '∞' : highestRR.toFixed(2)+'x'}</span>
+              </div>
+            </div>
+          )}
+
+          <div style={{ textAlign: "right", minWidth: 60 }}>
+            <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 700, color: C.text }}>${(primaryRow.underlying || 0).toFixed(2)}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: pos ? C.green : C.red }}>{pos ? "▲" : "▼"}{Math.abs(primaryRow.change || 0).toFixed(2)}%</div>
+          </div>
+
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: C.surfaceHi, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.border}` }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2.5" strokeLinecap="round"
+              style={{ transition: "transform 0.25s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded rows */}
+      {expanded && (
+        <div style={{ 
+          paddingTop: 10,
+          animation: "fadeUp 0.18s ease",
+          display: "flex", flexDirection: "column", gap: 8
+        }}>
+          {rows.map((row, i) => (
+             <ResultCard key={`${row.strategy}-${i}`} row={row} index={i} isDesktop={isDesktop} hideSymbol={true} />
+          ))}
         </div>
       )}
     </div>
@@ -1143,10 +1227,22 @@ export default function OptionChamber() {
             </div>
           )}
 
-          {/* Accordion cards */}
-          {filtered.map((row, i) => (
-            <ResultCard key={`${row.symbol}-${row.strategy}-${i}`} row={row} index={i} isDesktop={isDesktop} />
-          ))}
+          {/* Accordion cards - Grouped by symbol */}
+          {(() => {
+            const groups = [];
+            const symbolMap = new Map();
+            filtered.forEach(row => {
+              if (!symbolMap.has(row.symbol)) {
+                const newGroup = { symbol: row.symbol, rows: [], quote: row._quote };
+                symbolMap.set(row.symbol, newGroup);
+                groups.push(newGroup);
+              }
+              symbolMap.get(row.symbol).rows.push(row);
+            });
+            return groups.map((g, i) => (
+              <SymbolGroup key={g.symbol} group={g} index={i} isDesktop={isDesktop} />
+            ));
+          })()}
         </main>
       </div>
 

@@ -146,6 +146,11 @@ async function scanMarketWide(minVolume, minMarketCap, scenario = null) {
         for (const result of results) {
             if (result.status === 'fulfilled' && result.value?.strategies) {
                 allStrategies.push(...result.value.strategies);
+            } else if (result.status === 'rejected') {
+                // If it's a hard rate limit error from the upstream API, bubble it up rather than returning 0 strategies
+                if (result.reason && result.reason.message && (result.reason.message.includes('429') || result.reason.message.includes('limit'))) {
+                    throw result.reason;
+                }
             }
         }
     }

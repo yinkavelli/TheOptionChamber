@@ -53,6 +53,7 @@ export const api = {
         body: JSON.stringify({ mode: 'market-wide', ...params, ...(scenario ? { scenario } : {}) }),
     }),
 
+
     // Health check
     health: () => apiFetch('/health'),
 };
