@@ -288,7 +288,7 @@ function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
   const maxRisk = row.maxRisk || row.debit || 0;
   const rr = row.riskReward || (maxRisk > 0 ? Math.round((maxProfit === Infinity ? 999 : maxProfit / maxRisk) * 100) / 100 : 0);
   const rrColor = rr >= 2 ? C.green : rr >= 1 ? C.amber : C.red;
-  const fmtPnL = (v) => v === Infinity ? '∞' : `$${Math.abs(v).toFixed(0)}`;
+  const fmtPnL = (v) => v === Infinity ? '∞' : `$${Math.abs(v).toFixed(2)}`;
 
   // Margin & scenario fields
   const margin = row.estimatedMargin || 0;
@@ -425,150 +425,74 @@ function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
       {expanded && (
         <div style={{ borderTop: `1px solid ${C.border}`, padding: "14px 16px", animation: "fadeUp 0.18s ease" }}>
 
-          {/* Legs */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 8 }}>POSITION LEGS</div>
-            {(row.legs || [{ signal: row.signal, type: row.type || "C", strike: row.strike || 0, expiry: row.expiry, bid: row.bid, ask: row.ask }]).map((leg, i, arr) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px",
-                background: C.surfaceHi2, borderRadius: 8, marginBottom: i < arr.length - 1 ? 5 : 0
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{
-                    fontSize: 8, fontWeight: 800, color: leg.signal === "BUY" ? C.green : C.red,
-                    background: leg.signal === "BUY" ? C.greenBg : C.redBg, padding: "2px 5px", borderRadius: 4
-                  }}>{leg.signal}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.sub }}>{leg.type === "C" ? "Call" : "Put"} {Number(leg.strike).toFixed(0)}</span>
-                  <span style={{ fontSize: 9, color: C.muted }}>{leg.expiry}</span>
-                </div>
-                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, fontWeight: 600, color: C.text }}>
-                  <span style={{ color: C.green }}>${(leg.bid || 0).toFixed(2)}</span>
-                  <span style={{ color: C.muted }}> / </span>
-                  <span style={{ color: C.red }}>${(leg.ask || 0).toFixed(2)}</span>
+          {/* Payoff Diagram Card (Always expanded, includes Premium & Legs) */}
+          <div style={{ background: "transparent", border: `1px solid ${C.border}`, borderRadius: 12, marginBottom: 16, overflow: "hidden" }}>
+             <div style={{ background: C.surfaceHi2, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.text }}>Payoff & Structure</span>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700, color: C.text }}>
+                  Net: ${(row.bid || 0).toFixed(2)} <span style={{ color: C.muted }}>/ </span>${(row.ask || 0).toFixed(2)}
                 </span>
-              </div>
+             </div>
+             
+             {/* Payoff Chart */}
+             <div style={{ background: "rgba(0,0,0,0.30)", padding: "14px 10px 6px" }}>
+                <InteractivePayoff row={row} />
+             </div>
+
+             {/* Position Legs */}
+             <div style={{ background: C.surfaceHi2, padding: "10px 14px 12px", borderTop: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 8 }}>POSITION LEGS</div>
+                {(row.legs || [{ signal: row.signal, type: row.type || "C", strike: row.strike || 0, expiry: row.expiry, bid: row.bid, ask: row.ask }]).map((leg, i, arr) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", borderBottom: i < arr.length - 1 ? `1px solid rgba(255,255,255,0.03)` : "none", marginBottom: i < arr.length - 1 ? 4 : 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 8, fontWeight: 800, color: leg.signal === "BUY" ? C.green : C.red }}>{leg.signal}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.text }}>{leg.type === "C" ? "Call" : "Put"} {Number(leg.strike).toFixed(0)}</span>
+                      <span style={{ fontSize: 9, color: C.muted }}>{leg.expiry}</span>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, color: C.sub }}>
+                      ${(leg.bid || 0).toFixed(2)} / ${(leg.ask || 0).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+             </div>
+          </div>
+
+          {/* Compact Stats Grid (replaces large Margin & Greeks) */}
+          <div style={{ display: "flex", flexWrap: "wrap", columnGap: 24, rowGap: 14, background: C.surfaceHi, borderRadius: 10, padding: "12px 14px", border: `1px solid ${C.border}`, marginBottom: 16 }}>
+            {[
+              { label: "DELTA", value: greeks.Delta },
+              { label: "THETA", value: greeks.Theta },
+              { label: "IMPLIED VOL", value: `${(row.iv || 0).toFixed(1)}%` },
+              ...(margin > 0 ? [{ label: "MARGIN REQ", value: `$${margin.toLocaleString()}`, color: C.cyan }] : []),
+              { label: "PROB OF PROFIT", value: `${row.pop}%`, color: C.blue },
+              ...(hasScenario ? [{ label: "SCENARIO P&L", value: `${scenPnL >= 0 ? '+' : ''}$${scenPnL.toFixed(2)}`, color: scenPnL >= 0 ? C.green : C.red }] : []),
+            ].map((stat, i) => (
+               <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                 <span style={{ fontSize: 8, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }}>{stat.label}</span>
+                 <span style={{ fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", color: stat.color || C.text, fontWeight: 600 }}>{stat.value}</span>
+               </div>
             ))}
-          </div>
-
-          {/* Net premium row */}
-          <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            padding: "7px 10px", background: C.surfaceHi2, borderRadius: 8, marginBottom: 14
-          }}>
-            <span style={{ fontSize: 9, letterSpacing: 1, fontWeight: 700, color: C.muted }}>NET PREMIUM</span>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, fontWeight: 700, color: C.text }}>
-              ${(row.bid || 0).toFixed(2)} <span style={{ color: C.muted }}>/ </span>${(row.ask || 0).toFixed(2)}
-            </span>
-          </div>
-
-          {/* Margin & Capital section */}
-          {margin > 0 && (
-            <div style={{
-              background: C.surfaceHi, borderRadius: 10, padding: "10px 12px", marginBottom: 14,
-              border: `1px solid ${C.border}`,
-            }}>
-              <div style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 8 }}>MARGIN & CAPITAL</div>
-              {[
-                { label: "Est. Initial Margin", value: `$${margin.toLocaleString()}`, color: C.cyan },
-                { label: "Return on Margin", value: rom >= 999 ? '∞' : `${rom.toFixed(2)}x`, color: romColor },
-                ...(hasScenario ? [
-                  { label: `Scenario P&L (@$${(row.targetPrice || 0).toFixed(0)})`, value: `${scenPnL >= 0 ? '+' : ''}$${scenPnL.toFixed(2)}`, color: scenPnL >= 0 ? C.green : C.red },
-                  { label: "Scenario Score", value: `${row.scenarioScore || 0}`, color: (row.scenarioScore || 0) >= 65 ? C.green : (row.scenarioScore || 0) >= 45 ? C.amber : C.red },
-                ] : []),
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: 11, color: C.sub }}>{label}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color, fontWeight: 700 }}>{value}</span>
-                </div>
-              ))}
-              {/* Capital efficiency bar */}
-              <div style={{ marginTop: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Capital Efficiency</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, fontWeight: 700, color: romColor }}>{Math.min(100, Math.round(rom * 50))}%</span>
-                </div>
-                <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(100, Math.round(rom * 50))}%`, background: romColor, borderRadius: 2, transition: "width 0.6s ease" }} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 2×2 data grid — Greeks left, Price right */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr", background: C.surfaceHi, borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
-            <div style={{ padding: "8px 12px" }}>
-              <div style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 6 }}>GREEKS</div>
-              {Object.entries(greeks).map(([k, v]) => (
-                <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: 11, color: C.sub }}>{k}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.text, fontWeight: 600 }}>{v}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ background: C.border }} />
-            <div style={{ padding: "8px 12px" }}>
-              <div style={{ fontSize: 7.5, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 6 }}>MARKET</div>
-              {[
-                { label: "Open", value: `$${(row._quote?.open || 0).toFixed(2)}` },
-                { label: "High", value: `$${(row._quote?.high || 0).toFixed(2)}` },
-                { label: "Low", value: `$${(row._quote?.low || 0).toFixed(2)}` },
-                { label: "IV", value: `${(row.iv || 0).toFixed(1)}%` },
-                { label: "Math.Edge", value: row.edge !== undefined ? `${row.edge > 0 ? "+" : ""}$${row.edge.toFixed(2)}` : "—" },
-                { label: "Vol", value: row.vol || "—" },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: 11, color: C.sub }}>{label}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: C.text, fontWeight: 600 }}>{value}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Probability score bar */}
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-              <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }}>PROBABILITY SCORE</span>
+              <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }}>PROB SCORE & RATIONALE</span>
               <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, color: scoreColor }}>{score}%</span>
             </div>
-            <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${score}%`, background: scoreColor, borderRadius: 2, transition: "width 0.8s ease" }} />
+            <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden", marginBottom: 10 }}>
+               <div style={{ height: "100%", width: `${score}%`, background: scoreColor, borderRadius: 2, transition: "width 0.8s ease" }} />
             </div>
-          </div>
-
-          {/* Rationale bullets */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted, marginBottom: 8 }}>WHY HIGH PROBABILITY</div>
+            {/* Rationale bullets */}
             {sigs.map((s, i) => (
               <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: 6 }}>
-                <div style={{
-                  width: 14, height: 14, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                  background: C.greenBg, display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                  <svg width="7" height="7" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke={C.green} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                <div style={{ width: 14, height: 14, borderRadius: "50%", flexShrink: 0, marginTop: 1, background: C.greenBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="7" height="7" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke={C.green} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </div>
                 <span style={{ fontSize: 11, color: C.sub, lineHeight: 1.55 }}>{s}</span>
               </div>
             ))}
           </div>
-
-          {/* Payoff toggle */}
-          <button onClick={() => setShowPayoff(p => !p)} style={{
-            width: "100%", background: C.surfaceHi2, border: `1px solid ${C.border}`, borderRadius: 10,
-            padding: "9px 14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8,
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.text }}>Payoff Diagram</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round"
-              style={{ transition: "transform 0.22s", transform: showPayoff ? "rotate(180deg)" : "rotate(0)" }}>
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-          {showPayoff && (
-            <div style={{ background: "rgba(0,0,0,0.25)", borderRadius: 12, padding: "10px 8px 6px", marginBottom: 8, animation: "fadeUp 0.18s ease" }}>
-              <InteractivePayoff row={row} />
-            </div>
-          )}
 
           {/* News toggle */}
           <button onClick={() => setShowNews(p => !p)} style={{
