@@ -902,10 +902,14 @@ export default function OptionChamber() {
     let rows = strategy > 0 ? results.filter(r => r.strategy === STRATEGIES_LIST[strategy]) : results;
     if (chipFilter === "bull") rows = rows.filter(r => (r.change || 0) > 0);
     if (chipFilter === "bear") rows = rows.filter(r => (r.change || 0) < 0);
-    if (chipFilter === "highScore") rows = rows.filter(r => (r.score || 0) >= 75);
+    if (chipFilter === "highScore") rows = rows.filter(r => ((r.scenarioScore != null ? r.scenarioScore : r.score) || 0) >= 75);
     if (chipFilter === "topMove") rows = rows.filter(r => Math.abs(r.change || 0) === Math.max(...results.map(x => Math.abs(x.change || 0))));
     return [...rows].sort((a, b) => {
-      const av = a[sortKey] ?? 0, bv = b[sortKey] ?? 0;
+      let av = a[sortKey] ?? 0, bv = b[sortKey] ?? 0;
+      if (sortKey === "score") {
+        av = a.scenarioScore != null ? a.scenarioScore : (a.score || 0);
+        bv = b.scenarioScore != null ? b.scenarioScore : (b.score || 0);
+      }
       if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
       return sortDir === "asc" ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
     });
@@ -914,7 +918,7 @@ export default function OptionChamber() {
   // Summary stats for pills
   const bullishCount = results.filter(r => (r.change || 0) > 0).length;
   const bearishCount = results.filter(r => (r.change || 0) < 0).length;
-  const avgScore = results.length ? Math.round(results.reduce((s, r) => s + (r.score || 0), 0) / results.length) : null;
+  const avgScore = results.length ? Math.round(results.reduce((s, r) => s + (r.scenarioScore != null ? r.scenarioScore : (r.score || 0)), 0) / results.length) : null;
   const topMover = results.length ? results.reduce((best, r) => Math.abs(r.change || 0) > Math.abs(best.change || 0) ? r : best, results[0]) : null;
 
   return (
