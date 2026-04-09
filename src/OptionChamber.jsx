@@ -378,14 +378,14 @@ function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
           {/* R:R Ratio */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={rrColor} strokeWidth="3" strokeLinecap="round"><path d="M4 14l8-8 8 8" /></svg>
-            <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>R:R</span>
+            <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }} data-hint="Risk:Reward: Ratio of max potential profit to max potential loss">R:R</span>
             <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: rrColor }}>{rr >= 999 ? '∞' : rr.toFixed(2) + 'x'}</span>
           </div>
           {/* POP */}
           {row.pop > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="3" strokeLinecap="round"><circle cx="12" cy="12" r="8" /></svg>
-              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>POP</span>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }} data-hint="Probability of Profit: Expected chance of making at least $0.01">POP</span>
               <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.blue }}>{row.pop}%</span>
             </div>
           )}
@@ -393,28 +393,28 @@ function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
           {margin > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.cyan} strokeWidth="3" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3" /></svg>
-              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Margin</span>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }} data-hint="Estimated capital required by broker to hold this trade">Margin</span>
               <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.cyan }}>${margin.toLocaleString()}</span>
             </div>
           )}
           {/* ROM */}
           {rom > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>ROM</span>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }} data-hint="Return on Margin: Max profit divided by required capital">ROM</span>
               <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: romColor }}>{rom >= 999 ? '∞' : rom.toFixed(2) + 'x'}</span>
             </div>
           )}
           {/* Scenario P&L */}
           {hasScenario && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>Scen</span>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }} data-hint="Projected P&L if scenario happens">Scen</span>
               <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: scenPnL >= 0 ? C.green : C.red }}>{scenPnL >= 0 ? '+' : ''}${scenPnL.toFixed(2)}</span>
             </div>
           )}
           {/* DTE */}
           {row.dte > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: "auto" }}>
-              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }}>DTE</span>
+              <span style={{ fontSize: 9, color: C.muted, fontWeight: 600 }} data-hint="Days To Expiration: Time until the options nominally expire">DTE</span>
               <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, color: C.sub }}>{row.dte}d</span>
             </div>
           )}
@@ -460,15 +460,15 @@ function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
           {/* Compact Stats Grid (replaces large Margin & Greeks) */}
           <div style={{ display: "flex", flexWrap: "wrap", columnGap: 24, rowGap: 14, background: C.surfaceHi, borderRadius: 10, padding: "12px 14px", border: `1px solid ${C.border}`, marginBottom: 16 }}>
             {[
-              { label: "DELTA", value: greeks.Delta },
-              { label: "THETA", value: greeks.Theta },
-              { label: "IMPLIED VOL", value: `${(row.iv || 0).toFixed(1)}%` },
-              ...(margin > 0 ? [{ label: "MARGIN REQ", value: `$${margin.toLocaleString()}`, color: C.cyan }] : []),
-              { label: "PROB OF PROFIT", value: `${row.pop}%`, color: C.blue },
-              ...(hasScenario ? [{ label: "SCENARIO P&L", value: `${scenPnL >= 0 ? '+' : ''}$${scenPnL.toFixed(2)}`, color: scenPnL >= 0 ? C.green : C.red }] : []),
+              { label: "DELTA", value: greeks.Delta, hint: "Expected $ change in option price per $1 move in stock" },
+              { label: "THETA", value: greeks.Theta, hint: "Expected daily $ loss in option value due to time passing" },
+              { label: "IMPLIED VOL", value: `${(row.iv || 0).toFixed(1)}%`, hint: "Market's forecast of potential underlying stock movement" },
+              ...(margin > 0 ? [{ label: "MARGIN REQ", value: `$${margin.toLocaleString()}`, color: C.cyan, hint: "Estimated capital the broker will hold for this trade" }] : []),
+              { label: "PROB OF PROFIT", value: `${row.pop}%`, color: C.blue, hint: "Statistical chance this strategy expires profitably" },
+              ...(hasScenario ? [{ label: "SCENARIO P&L", value: `${scenPnL >= 0 ? '+' : ''}$${scenPnL.toFixed(2)}`, color: scenPnL >= 0 ? C.green : C.red, hint: "Estimated return at target price/date" }] : []),
             ].map((stat, i) => (
                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                 <span style={{ fontSize: 8, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }}>{stat.label}</span>
+                 <span style={{ fontSize: 8, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }} data-hint={stat.hint}>{stat.label}</span>
                  <span style={{ fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", color: stat.color || C.text, fontWeight: 600 }}>{stat.value}</span>
                </div>
             ))}
@@ -477,7 +477,7 @@ function ResultCard({ row, index, isDesktop, onSelect, hideSymbol }) {
           {/* Probability score bar */}
           <div style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-              <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }}>PROB SCORE & RATIONALE</span>
+              <span style={{ fontSize: 8, letterSpacing: 1.5, fontWeight: 700, color: C.muted }} data-hint="Proprietary scoring blending edge, risk/reward, and liquidity">PROB SCORE & RATIONALE</span>
               <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, color: scoreColor }}>{score}%</span>
             </div>
             <div style={{ height: 3, background: C.surfaceHi2, borderRadius: 2, overflow: "hidden", marginBottom: 10 }}>
@@ -557,15 +557,15 @@ function SymbolGroup({ group, index, isDesktop }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: isDesktop ? 20 : 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {isDesktop && (
             <div style={{ display: "flex", gap: 16, marginRight: 8, paddingRight: 16, borderRight: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }}>AVG SCORE</span>
+                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }} data-hint="Average setup quality score of all grouping strategies">AVG SCORE</span>
                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: avgScore >= 65 ? C.green : C.amber, fontWeight: 700 }}>{avgScore}%</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }}>MAX R:R</span>
+                <span style={{ fontSize: 9, color: C.muted, fontWeight: 700, letterSpacing: 0.5 }} data-hint="Highest Max Profit to Max Loss ratio among strategies">MAX R:R</span>
                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: highestRR >= 2 ? C.green : C.amber, fontWeight: 700 }}>{highestRR >= 999 ? '∞' : highestRR.toFixed(2)+'x'}</span>
               </div>
             </div>
@@ -926,6 +926,14 @@ export default function OptionChamber() {
         @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
         @keyframes spin    { to{transform:rotate(360deg)} }
         @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        [data-hint] { position: relative; cursor: help; border-bottom: 1px dotted rgba(255,255,255,0.4); display: inline-block; }
+        [data-hint]:hover::after {
+          content: attr(data-hint); position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+          background: rgba(14,14,18,0.95); border: 1px solid rgba(255,255,255,0.12); padding: 5px 8px; border-radius: 6px;
+          font-size: 10px; color: #fff; white-space: pre-wrap; width: max-content; max-width: 170px;
+          z-index: 1000; pointer-events: none; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          font-family: 'IBM Plex Sans', sans-serif; font-weight: 500; letter-spacing: 0; line-height: 1.4; text-transform: none;
+        }
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { display:none; }
         input,select { outline:none; }
